@@ -3,6 +3,10 @@ import chalk from 'chalk'
 
 export default async function enrollIntoCourse(course) {
   const link = course.udemyLink;
+
+  console.log(chalk.blue("Checking:", link || "No Udemy link found"));
+  if (!link) { return; }
+
   const page = await browser.newPage();
   await page.goto(link);
 

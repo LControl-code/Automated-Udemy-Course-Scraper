@@ -31,7 +31,11 @@ class Course {
 const startTime = new Date();
 
 const page = await accessFreeCourseWebsite()
+
+console.log(`--------------------------\nAccessing free courses website\n--------------------------`);
 const links = await extractLinks(page);
+
+console.log(`--------------------------\nFound ${links.length} courses\n--------------------------\n`);
 
 let courses = links.map(link => {
   let course = new Course();
@@ -49,6 +53,9 @@ await tempCookiePage.setViewport({
   height: 1080,
 });
 await setCookies(tempCookiePage);
+
+console.log(`\n--------------------------\nEnrolling into ${courses.length} courses\n--------------------------`);
+
 
 const results = await Promise.all(courses.map(async (course) => {
   return await enrollIntoCourse(course);

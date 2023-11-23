@@ -5,5 +5,7 @@ export default async function extractLinks(page) {
       .filter(link => link.startsWith('https://findmycourse.in/course/'));
   });
 
+  console.log(links, 'Course links');
+
   return links;
 }
