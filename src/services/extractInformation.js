@@ -1,4 +1,4 @@
-import { browser } from './app.js'
+import { browser } from '../main/app.js'
 
 export default async function extractInformation(course) {
   const link = course.findmycourseLink;

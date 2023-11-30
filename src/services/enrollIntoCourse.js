@@ -1,4 +1,4 @@
-import { browser } from './app.js'
+import { browser } from '../main/app.js'
 import chalk from 'chalk'
 
 export default async function enrollIntoCourse(course) {

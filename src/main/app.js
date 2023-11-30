@@ -1,12 +1,12 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import accessFreeCourseWebsite from './accessFreeCourseWebsite.js'
-import extractLinks from './extractLinks.js';
-import extractInformation from './extractInformation.js';
-import enrollIntoCourse from './enrollIntoCourse.js'
-import setCookies from './setCookies.js'
-import checkoutCourse from './checkoutCourse.js'
-import findNewCourses from './findNewCourses.js'
+import accessFreeCourseWebsite from '../services/accessFreeCourseWebsite.js'
+import extractLinks from '../services/extractLinks.js';
+import extractInformation from '../services/extractInformation.js';
+import enrollIntoCourse from '../services/enrollIntoCourse.js'
+import setCookies from '../services/setCookies.js'
+import checkoutCourse from '../services/checkoutCourse.js'
+import findNewCourses from '../services/findNewCourses.js'
 
 puppeteer.use(StealthPlugin());
 

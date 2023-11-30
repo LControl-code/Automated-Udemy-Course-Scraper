@@ -9,6 +9,6 @@
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "scripts": {
-        "start": "node app.js"
+        "start": "node src/main/app.js"
     }
 }
