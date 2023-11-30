@@ -4,7 +4,7 @@ import chalk from 'chalk'
 export default async function enrollIntoCourse(course) {
   const link = course.udemyLink;
   logCheckingLink(link);
-  if (!link) { return; }
+  if (!link) { return null; }
 
   const page = await createNewPageAndGoToLink(link);
 
@@ -15,7 +15,7 @@ export default async function enrollIntoCourse(course) {
 
   if (!isButtonAvailable(buttonToClick, pageTitle)) {
     await page.close();
-    return;
+    return null;
   }
 
   const buttonText = await getButtonText(page, buttonToClick);
