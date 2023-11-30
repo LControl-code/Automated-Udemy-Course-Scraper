@@ -1,6 +1,5 @@
 node_modules/
-cookies.json
-error.log
-success.log
 .env
-previousRunSiteList.json
+logs/
+data/
+.hidden/
