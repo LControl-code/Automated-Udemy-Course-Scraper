@@ -6,6 +6,7 @@ import extractInformation from './extractInformation.js';
 import enrollIntoCourse from './enrollIntoCourse.js'
 import setCookies from './setCookies.js'
 import checkoutCourse from './checkoutCourse.js'
+import findNewCourses from './findNewCourses.js'
 
 puppeteer.use(StealthPlugin());
 
@@ -35,9 +36,16 @@ const page = await accessFreeCourseWebsite()
 console.log(`--------------------------\nAccessing free courses website\n--------------------------`);
 const links = await extractLinks(page);
 
-console.log(`--------------------------\nFound ${links.length} courses\n--------------------------\n`);
+const newLinks = findNewCourses(links);
 
-let courses = links.map(link => {
+console.log(`--------------------------\nFound ${newLinks.length} new courses\n--------------------------\n`);
+
+if (newLinks.length === 0) {
+  await browser.close();
+  process.exit(0);
+}
+
+let courses = newLinks.map(link => {
   let course = new Course();
   course.findmycourseLink = link;
   return course;
