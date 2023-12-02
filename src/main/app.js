@@ -1,17 +1,32 @@
+// Description: Main file for the application. This file is responsible for the main flow of the application.
+
+process.on('uncaughtException', (err) => {
+  console.error('There was an uncaught error', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
+
+
+// Importing external libraries
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+
+// Importing services
 import accessFreeCourseWebsite from '../services/accessFreeCourseWebsite.js'
 import extractLinks from '../services/extractLinks.js';
 import extractInformation from '../services/extractInformation.js';
 import enrollIntoCourse from '../services/enrollIntoCourse.js'
 import setCookies from '../services/setCookies.js'
-import checkoutCourse from '../services/checkoutCourse.js'
+import handleCourseEnrollment from '../services/handleCourseEnrollment.js'
 import findNewCourses from '../services/findNewCourses.js'
 
 puppeteer.use(StealthPlugin());
-
 export const browser = await puppeteer.launch({
-  headless: 'new',
+  headless: false,
   defaultViewport: {
     width: 1920,
     height: 1080,
@@ -45,35 +60,48 @@ if (newLinks.length === 0) {
   process.exit(0);
 }
 
-let courses = newLinks.map(link => {
-  let course = new Course();
+const courses = newLinks.map(link => {
+  const course = new Course();
   course.findmycourseLink = link;
   return course;
 });
 
-await Promise.all(courses.map(async (course) => {
-  await extractInformation(course);
-}));
+try {
+  await Promise.all(courses.map(extractInformation));
+} catch (error) {
+  console.error('An error occurred during information extraction:', error.message);
+}
 
-const tempCookiePage = await browser.newPage();
-await tempCookiePage.setViewport({
-  width: 1920,
-  height: 1080,
-});
-await setCookies(tempCookiePage);
+let tempCookiePage;
+try {
+  tempCookiePage = await browser.newPage();
+  await tempCookiePage.setViewport({
+    width: 1920,
+    height: 1080,
+  });
+  await setCookies(tempCookiePage);
+} catch (error) {
+  console.error('An error occurred while setting up cookies:', error.message);
+} finally {
+  if (tempCookiePage) {
+    await tempCookiePage.close();
+  }
+}
+
 
 console.log(`\n--------------------------\nEnrolling into ${courses.length} courses\n--------------------------`);
 
 
-const results = await Promise.all(courses.map(async (course) => {
-  return await enrollIntoCourse(course);
-}));
+try {
+  const enrollmentResults = await Promise.all(courses.map(enrollIntoCourse));
 
-
-for (const result of results) {
-  if (result != null) {
-    await checkoutCourse(result);
+  for (const enrollmentResult of enrollmentResults) {
+    if (enrollmentResult != null) {
+      await handleCourseEnrollment(enrollmentResult);
+    }
   }
+} catch (error) {
+  console.error('An error occurred during enrollment:', error.message);
 }
 
 const endTime = new Date();

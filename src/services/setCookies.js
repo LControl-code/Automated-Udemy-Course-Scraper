@@ -36,7 +36,6 @@ async function checkLogin(page) {
     console.log("Not logged in");
     await login(page);
   }
-  await page.close()
 }
 
 
