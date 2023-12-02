@@ -71,7 +71,7 @@ const results = await Promise.all(courses.map(async (course) => {
 
 
 for (const result of results) {
-  if (result) {
+  if (result != null) {
     await checkoutCourse(result);
   }
 }
