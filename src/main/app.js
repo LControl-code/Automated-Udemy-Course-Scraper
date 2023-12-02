@@ -26,7 +26,7 @@ import findNewCourses from '../services/findNewCourses.js'
 
 puppeteer.use(StealthPlugin());
 export const browser = await puppeteer.launch({
-  headless: false,
+  headless: 'new',
   defaultViewport: {
     width: 1920,
     height: 1080,
