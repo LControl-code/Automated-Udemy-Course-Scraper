@@ -1,4 +1,6 @@
 export default async function extractLinks(page) {
+  await page.waitForSelector('a[href^="/course/"]');
+
   const links = await page.$$eval('a', anchors => {
     return anchors
       .map(anchor => anchor.href)

@@ -9,6 +9,12 @@
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "scripts": {
-        "start": "node src/main/app.js"
-    }
+    "start": "node src/main/app.js"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.5",
+    "@babel/preset-env": "^7.23.5",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0"
+  }
 }
