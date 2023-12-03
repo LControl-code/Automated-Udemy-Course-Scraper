@@ -2,9 +2,6 @@ import { bringPageToFront, getPageTitle } from '../helperServices/pageHelpers.js
 import { waitForUrl } from '../helperServices/navigationHelpers.js';
 import { logEnrollmentStatus } from '../helperServices/loggingHelpers.js';
 import { clickButton } from '../helperServices/buttonClickHelpers.js';
-import { wait } from '../helperServices/utilityHelpers.js';
-
-const WAIT_TIME_MS = 500;
 
 export async function clickButtonWithEnvCheck(page, pageTitle, envVar, buttonToClick) {
   const buttonSelector = process.env[envVar];

@@ -46,19 +46,24 @@ class Course {
 
 const startTime = new Date();
 
-const page = await accessFreeCourseWebsite()
+try {
+  const page = await accessFreeCourseWebsite()
 
-console.log(`--------------------------\nAccessing free courses website\n--------------------------`);
-const links = await extractLinks(page);
+  console.log(`--------------------------\nAccessing free courses website\n--------------------------`);
+  const links = await extractLinks(page);
 
-const newLinks = findNewCourses(links);
+  const newLinks = findNewCourses(links);
 
-console.log(`--------------------------\nFound ${newLinks.length} new courses\n--------------------------\n`);
+  console.log(`--------------------------\nFound ${newLinks.length} new courses\n--------------------------\n`);
 
-if (newLinks.length === 0) {
-  await browser.close();
-  process.exit(0);
+  if (newLinks.length === 0) {
+    await browser.close();
+    process.exit(0);
+  }
+} catch (error) {
+  console.error('An error occurred during link extraction:', error.message);
 }
+
 
 const courses = newLinks.map(link => {
   const course = new Course();
