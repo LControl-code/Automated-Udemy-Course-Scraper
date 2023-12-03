@@ -7,11 +7,11 @@ import scrapeSite from './scrapeSite.js';
 async function runAndReschedule() {
   // Check if we should scrape the site
   if (await shouldScrape()) {
-    console.log(`--------------------------\nScraping enabled\n--------------------------`);
+    process.stdout.write(`+ Scraping enabled\r`);
     // If we should, then scrape the site
     await scrapeSite();
   } else {
-    console.log(`--------------------------\nScraping not needed\n--------------------------`);
+    process.stdout.write(`- Scraping disabled\r`);
   }
 
   // Schedule this function to run again in 60 seconds
