@@ -1,28 +1,42 @@
 // Description: Main file for the application. This file is responsible for the main flow of the application.
-
-process.on('uncaughtException', (err) => {
-  console.error('There was an uncaught error', err);
-  process.exit(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);
-});
-
+import { handleUncaughtErrors, withErrorHandling } from '../helperServices/globalErrorHandler.js';
+handleUncaughtErrors();
 
 // Importing external libraries
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
+
 // Importing services
-import accessFreeCourseWebsite from '../services/accessFreeCourseWebsite.js'
-import extractLinks from '../services/extractLinks.js';
-import extractInformation from '../services/extractInformation.js';
-import enrollIntoCourse from '../services/enrollIntoCourse.js'
-import setCookies from '../services/setCookies.js'
-import handleCourseEnrollment from '../services/handleCourseEnrollment.js'
-import findNewCourses from '../services/findNewCourses.js'
+import accessFreeCourseWebsiteOriginal from '../services/accessFreeCourseWebsite.js'
+import extractLinksOriginal from '../services/extractLinks.js';
+import extractInformationOriginal from '../services/extractInformation.js';
+import enrollIntoCourseOriginal from '../services/enrollIntoCourse.js'
+import setCookiesOriginal from '../services/setCookies.js'
+import handleCourseEnrollmentOriginal from '../services/handleCourseEnrollment.js'
+import findNewCoursesOriginal from '../services/findNewCourses.js'
+
+function wrapWithErrorHandler(functions) {
+  return functions.map(fn => withErrorHandling(fn));
+}
+
+const [
+  accessFreeCourseWebsite,
+  extractLinks,
+  extractInformation,
+  enrollIntoCourse,
+  setCookies,
+  handleCourseEnrollment,
+  findNewCourses
+] = wrapWithErrorHandler([
+  accessFreeCourseWebsiteOriginal,
+  extractLinksOriginal,
+  extractInformationOriginal,
+  enrollIntoCourseOriginal,
+  setCookiesOriginal,
+  handleCourseEnrollmentOriginal,
+  findNewCoursesOriginal
+]);
 
 puppeteer.use(StealthPlugin());
 export const browser = await puppeteer.launch({
@@ -45,24 +59,19 @@ class Course {
 }
 
 const startTime = new Date();
-let newLinks = [];
 
-try {
-  const page = await accessFreeCourseWebsite()
+const page = await accessFreeCourseWebsite()
 
-  console.log(`--------------------------\nAccessing free courses website\n--------------------------`);
-  const links = await extractLinks(page);
+console.log(`--------------------------\nAccessing free courses website\n--------------------------`);
+const links = await extractLinks(page);
 
-  newLinks = findNewCourses(links);
+const newLinks = await findNewCourses(links);
 
-  console.log(`--------------------------\nFound ${newLinks.length} new courses\n--------------------------\n`);
+console.log(`--------------------------\nFound ${newLinks.length} new courses\n--------------------------\n`);
 
-  if (newLinks.length === 0) {
-    await browser.close();
-    process.exit(0);
-  }
-} catch (error) {
-  console.error('An error occurred during link extraction:', error.message);
+if (newLinks.length === 0) {
+  await browser.close();
+  process.exit(0);
 }
 
 
@@ -72,43 +81,33 @@ const courses = newLinks.map(link => {
   return course;
 });
 
-try {
-  await Promise.all(courses.map(extractInformation));
-} catch (error) {
-  console.error('An error occurred during information extraction:', error.message);
+
+await Promise.all(courses.map(extractInformation));
+
+
+const tempCookiePage = await browser.newPage();
+await tempCookiePage.setViewport({
+  width: 1920,
+  height: 1080,
+});
+await setCookies(tempCookiePage);
+if (tempCookiePage) {
+  await tempCookiePage.close();
 }
 
-let tempCookiePage;
-try {
-  tempCookiePage = await browser.newPage();
-  await tempCookiePage.setViewport({
-    width: 1920,
-    height: 1080,
-  });
-  await setCookies(tempCookiePage);
-} catch (error) {
-  console.error('An error occurred while setting up cookies:', error.message);
-} finally {
-  if (tempCookiePage) {
-    await tempCookiePage.close();
-  }
-}
 
 
 console.log(`\n--------------------------\nEnrolling into ${courses.length} courses\n--------------------------`);
 
 
-try {
-  const enrollmentResults = await Promise.all(courses.map(enrollIntoCourse));
+const enrollmentResults = await Promise.all(courses.map(enrollIntoCourse));
 
-  for (const enrollmentResult of enrollmentResults) {
-    if (enrollmentResult != null) {
-      await handleCourseEnrollment(enrollmentResult);
-    }
+for (const enrollmentResult of enrollmentResults) {
+  if (enrollmentResult != null) {
+    await handleCourseEnrollment(enrollmentResult);
   }
-} catch (error) {
-  console.error('An error occurred during enrollment:', error.message);
 }
+
 
 const endTime = new Date();
 const executionTime = endTime - startTime;
