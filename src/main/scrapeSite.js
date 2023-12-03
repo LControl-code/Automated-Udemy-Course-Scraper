@@ -72,15 +72,13 @@ export default async function scrapeSite() {
 
   const page = await accessFreeCourseWebsite()
 
-  console.log(`--------------------------\nAccessing free courses website\n--------------------------`);
   const links = await extractLinks(page);
 
   const newLinks = await findNewCourses(links);
 
-  console.log(`--------------------------\nFound ${newLinks.length} new courses\n--------------------------\n`);
-
   if (newLinks.length === 0) {
     await browser.close();
+    console.log(`No new courses found`);
     return;
   }
 
@@ -106,10 +104,6 @@ export default async function scrapeSite() {
   }
 
 
-
-  console.log(`\n--------------------------\nEnrolling into ${courses.length} courses\n--------------------------`);
-
-
   const enrollmentResults = await Promise.all(courses.map(enrollIntoCourse));
 
   for (const enrollmentResult of enrollmentResults) {
@@ -122,7 +116,7 @@ export default async function scrapeSite() {
   const endTime = new Date();
   const executionTime = endTime - startTime;
 
-  console.log(`Program completed in ${(executionTime / 1000).toFixed(2)}s`);
+  console.log(`Enrollment completed in ${(executionTime / 1000).toFixed(2)}s`);
 
   await browser.close();
 
