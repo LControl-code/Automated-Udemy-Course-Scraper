@@ -1,6 +1,6 @@
 import chalk from 'chalk'
 
-import { browser } from '../main/app.js'
+import { browser } from '../main/scrapeSite.js'
 export function logButtonText(buttonText, course) {
   if (buttonText === "Go to course") {
     console.log(chalk.yellow("= Already enrolled:", course.name));

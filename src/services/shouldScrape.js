@@ -1,11 +1,26 @@
-import fs from 'fs';
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
+import { writeLog } from '../helperServices/loggingHelpers.js';
 
-async function shouldScrape(url, lastEtag) {
+export default async function shouldScrape() {
+  const url = process.env.BACKEND_URL_POLLING;
+  const eTagFilePath = path.resolve('data', 'eTag.json')
+
+  if (!fs.existsSync(eTagFilePath)) {
+    await writeLog(eTagFilePath, JSON.stringify({ eTag: '' }), 'r');
+  }
+
+  let eTagData = { eTag: '' };
+  const fileContent = fs.readFileSync(eTagFilePath, 'utf8');
+  if (fileContent) {
+    eTagData = JSON.parse(fileContent);
+  }
+
   const response = await axios.get(url);
   const currentEtag = response.headers['etag'];
-
-  return currentEtag;
+  if (currentEtag !== eTagData.eTag) {
+    await writeLog(eTagFilePath, JSON.stringify({ eTag: currentEtag }), 'r');
+  }
+  return currentEtag !== eTagData.eTag;
 }
-
-console.log(await shouldScrape('https://findmycourse-backend.findmycourse.in/all?page=1'));

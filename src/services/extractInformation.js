@@ -1,4 +1,4 @@
-import { browser } from '../main/app.js'
+import { browser } from '../main/scrapeSite.js'
 
 export default async function extractInformation(course) {
   const link = course.findmycourseLink;
