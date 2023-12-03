@@ -45,6 +45,7 @@ class Course {
 }
 
 const startTime = new Date();
+let newLinks = [];
 
 try {
   const page = await accessFreeCourseWebsite()
@@ -52,7 +53,7 @@ try {
   console.log(`--------------------------\nAccessing free courses website\n--------------------------`);
   const links = await extractLinks(page);
 
-  const newLinks = findNewCourses(links);
+  newLinks = findNewCourses(links);
 
   console.log(`--------------------------\nFound ${newLinks.length} new courses\n--------------------------\n`);
 
