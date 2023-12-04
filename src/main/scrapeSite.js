@@ -16,46 +16,57 @@ import setCookiesOriginal from '../services/setCookies.js'
 import handleCourseEnrollmentOriginal from '../services/handleCourseEnrollment.js'
 import findNewCoursesOriginal from '../services/findNewCourses.js'
 
+
 function wrapWithErrorHandler(functions) {
   return functions.map(fn => withErrorHandling(fn));
 }
-
-const [
-  accessFreeCourseWebsite,
-  extractLinks,
-  extractInformation,
-  enrollIntoCourse,
-  setCookies,
-  handleCourseEnrollment,
-  findNewCourses,
-] = wrapWithErrorHandler([
-  accessFreeCourseWebsiteOriginal,
-  extractLinksOriginal,
-  extractInformationOriginal,
-  enrollIntoCourseOriginal,
-  setCookiesOriginal,
-  handleCourseEnrollmentOriginal,
-  findNewCoursesOriginal
-]);
 
 puppeteer.use(StealthPlugin());
 
 export let browser;
 
-async function initializeBrowser() {
-  browser = await puppeteer.launch({
-    headless: 'new',
-    defaultViewport: {
-      width: 1920,
-      height: 1080,
-    },
-  });
+async function getBrowserInstance() {
+  if (!browser) {
+    browser = await puppeteer.launch({
+      headless: 'new',
+      defaultViewport: {
+        width: 1920,
+        height: 1080,
+      },
+
+      timeout: 100000,
+    });
+  }
+  return browser;
+}
+
+async function closeBrowserInstance() {
+  if (browser) {
+    await browser.close();
+    browser = null;
+  }
 }
 
 export default async function scrapeSite() {
-  if (!browser) {
-    await initializeBrowser();
-  }
+  const browser = await getBrowserInstance();
+
+  const [
+    accessFreeCourseWebsite,
+    extractLinks,
+    extractInformation,
+    enrollIntoCourse,
+    setCookies,
+    handleCourseEnrollment,
+    findNewCourses,
+  ] = wrapWithErrorHandler([
+    accessFreeCourseWebsiteOriginal,
+    extractLinksOriginal,
+    extractInformationOriginal,
+    enrollIntoCourseOriginal,
+    setCookiesOriginal,
+    handleCourseEnrollmentOriginal,
+    findNewCoursesOriginal
+  ]);
 
   class Course {
     name = '';
@@ -70,7 +81,7 @@ export default async function scrapeSite() {
 
   const startTime = new Date();
 
-  const page = await accessFreeCourseWebsite()
+  const page = await accessFreeCourseWebsite(browser)
 
   const links = await extractLinks(page);
 
@@ -118,6 +129,6 @@ export default async function scrapeSite() {
 
   console.log(`Enrollment completed in ${(executionTime / 1000).toFixed(2)}s`);
 
-  await browser.close();
+  await closeBrowserInstance();
 
 }
