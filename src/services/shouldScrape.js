@@ -17,7 +17,7 @@ export default async function shouldScrape() {
     eTagData = JSON.parse(fileContent);
   }
 
-  const response = await axios.get(url);
+  const response = await axios.head(url);
   const currentEtag = response.headers['etag'];
   if (currentEtag !== eTagData.eTag) {
     await writeLog(eTagFilePath, JSON.stringify({ eTag: currentEtag }), 'r');
