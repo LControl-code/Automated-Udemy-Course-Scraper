@@ -34,7 +34,7 @@ async function getBrowserInstance() {
         height: 1080,
       },
 
-      timeout: 100000,
+      timeout: 200000,
     });
   }
   return browser;

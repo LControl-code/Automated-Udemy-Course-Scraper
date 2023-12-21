@@ -23,8 +23,8 @@ async function runAndReschedule() {
     }
   }
 
-  // Schedule this function to run again in 60 seconds
-  setTimeout(() => { runAndReschedule(); }, 60000);
+  // Schedule this function to run again in 60'000 ms * 10 = 10 minutes 
+  setTimeout(() => { runAndReschedule(); }, 60000 * 10);
 }
 
 // Start the first execution of the function
