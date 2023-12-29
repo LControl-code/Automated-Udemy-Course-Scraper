@@ -48,7 +48,7 @@ async function checkForUpdates(url, oldETag) {
     });
 
     if (response.status === 304) {
-      console.log('No updates');
+      //// console.log('No updates');
     } else if (response.status === 200) {
       //// console.log('Updates available');
       // Update your stored ETag
