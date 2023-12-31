@@ -19,13 +19,12 @@ async function runAndReschedule() {
   } catch (error) {
     failCount++;
     console.error(`ScrapeSite failed ${failCount} time(s).`);
+
     if (failCount >= 2) {
-      exec('notify-send "ScrapeSite failed 5 times. Stopping execution."');
+      exec('notify-send "ScrapeSite failed. Stopping execution."');
 
       console.log('Restarting process...');
       process.kill(process.pid, 'SIGUSR2');
-
-      process.exit(1); // exit current process
     }
   }
 
