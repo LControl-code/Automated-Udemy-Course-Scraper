@@ -1,6 +1,7 @@
 // Import necessary functions
 import shouldScrape from '../services/shouldScrape.js';
 import scrapeSite from './scrapeSite.js';
+import { exec } from 'child_process';
 
 // This function checks if we should scrape the site, and if so, it does.
 // After it's done, it schedules itself to run again in 60 seconds.
@@ -18,8 +19,13 @@ async function runAndReschedule() {
   } catch (error) {
     failCount++;
     console.error(`ScrapeSite failed ${failCount} time(s).`);
-    if (failCount >= 5) {
-      throw new Error('ScrapeSite failed 5 times. Stopping execution.');
+    if (failCount >= 2) {
+      exec('notify-send "ScrapeSite failed 5 times. Stopping execution."');
+
+      console.log('Restarting process...');
+      process.kill(process.pid, 'SIGUSR2');
+
+      process.exit(1); // exit current process
     }
   }
 

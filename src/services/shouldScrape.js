@@ -1,12 +1,25 @@
 import axios from 'axios';
+import axiosRetry from 'axios-retry';
 import fs from 'fs/promises';
+import dotenv from 'dotenv';
 import path from 'path';
 import { writeLog } from '../helperServices/loggingHelpers.js';
-import dotenv from 'dotenv';
 dotenv.config();
 
+axiosRetry(axios, {
+  retries: 3,
+  retryCondition: (error) => {
+    console.error('Error:', error.message);
+    return error.code === 'EAI_AGAIN' || axiosRetry.isNetworkOrIdempotentRequestError(error);
+  },
+  retryDelay: (retryCount) => {
+    console.log(`Retry attempt #${retryCount}`);
+    return retryCount * 1000;
+  },
+});
+
 export default async function shouldScrape() {
-  const url = process.env.BACKEND_URL_POLLING;
+  const url = process.env.BACKEND_URL_POLLING_IP;
   const eTagFilePath = path.resolve('data', 'eTag.json');
   const eTag = await getETag(eTagFilePath);
 
@@ -40,24 +53,23 @@ async function checkForUpdates(url, oldETag) {
   try {
     const response = await axios.head(url, {
       headers: {
-        'If-None-Match': oldETag
+        'If-None-Match': oldETag,
+        'Host': 'findmycourse-backend.findmycourse.in'
       },
       validateStatus: function (status) {
         return (status >= 200 && status < 300) || status === 304;
       },
     });
 
-    if (response.status === 304) {
-      //// console.log('No updates');
-    } else if (response.status === 200) {
-      //// console.log('Updates available');
+    if (response.status === 200) {
       // Update your stored ETag
       const newETag = response.headers.etag;
-      //// console.log('New ETag:', newETag);
       return newETag;
     }
   } catch (error) {
     console.error('Error:', error.message);
+    throw new Error(error)
   }
   return null;
 }
+
