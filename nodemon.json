@@ -1,6 +1,14 @@
 {
   "ignore": [
     "data/*",
-    "logs/*"
+    "logs/*",
+    ".hidden/*",
+    "node_modules/*",
+    "src/*",
+    ".env",
+    ".gitignore",
+    "package.json",
+    "package-lock.json",
+    ".env.example"
   ]
 }

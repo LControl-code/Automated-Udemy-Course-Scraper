@@ -21,7 +21,7 @@ async function runAndReschedule() {
     console.error(`ScrapeSite failed ${failCount} time(s).`);
 
     if (failCount >= 2) {
-      exec('notify-send "ScrapeSite failed. Stopping execution."');
+      exec('notify-send "ScrapeSite failed. Restarting process"');
 
       console.log('Restarting process...');
       process.kill(process.pid, 'SIGUSR2');
@@ -29,7 +29,7 @@ async function runAndReschedule() {
   }
 
   // Schedule this function to run again in 60'000 ms * 10 = 10 minutes 
-  setTimeout(() => { runAndReschedule(); }, 60000 * 10);
+  setTimeout(() => { runAndReschedule(); }, 60000 * 5);
 }
 
 // Start the first execution of the function
