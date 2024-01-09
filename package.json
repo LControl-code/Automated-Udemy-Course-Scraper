@@ -1,10 +1,13 @@
 {
   "type": "module",
   "dependencies": {
+    "@sentry/node": "^7.92.0",
+    "@sentry/tracing": "^7.92.0",
     "axios": "^1.6.2",
     "axios-retry": "^4.0.0",
     "chalk": "^5.3.0",
     "dotenv": "^16.3.1",
+    "node-fetch": "^3.3.2",
     "nodemon": "^3.0.2",
     "puppeteer": "^21.5.2",
     "puppeteer-core": "^21.5.2",

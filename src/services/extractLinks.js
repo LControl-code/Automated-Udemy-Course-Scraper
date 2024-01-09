@@ -9,3 +9,4 @@ export default async function extractLinks(page) {
 
   return links;
 }
+

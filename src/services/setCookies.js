@@ -41,6 +41,7 @@ async function checkLogin(page) {
 
 export default async function setCookies(page) {
   const cookiesFilePath = 'data/cookies.json';
+  const cookiesStringFilePath = 'data/cookiesString.txt';
   if (!fs.existsSync(cookiesFilePath)) {
     console.log("No cookies found - logging in")
     await login(page);
@@ -49,6 +50,9 @@ export default async function setCookies(page) {
   console.log("Checking Log in")
 
   const cookies = JSON.parse(fs.readFileSync(cookiesFilePath, 'utf8'));
+  const cookieString = cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
+  fs.writeFileSync(cookiesStringFilePath, cookieString);
+
   await page.setCookie(...cookies);
 
   await checkLogin(page);

@@ -8,18 +8,27 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
 
 // Importing services
-import accessFreeCourseWebsiteOriginal from '../services/accessFreeCourseWebsite.js'
-import extractLinksOriginal from '../services/extractLinks.js';
-import extractInformationOriginal from '../services/extractInformation.js';
-import enrollIntoCourseOriginal from '../services/enrollIntoCourse.js'
-import setCookiesOriginal from '../services/setCookies.js'
-import handleCourseEnrollmentOriginal from '../services/handleCourseEnrollment.js'
-import findNewCoursesOriginal from '../services/findNewCourses.js'
+// import accessFreeCourseWebsiteOriginal from '../services/accessFreeCourseWebsite.js'
+// import extractLinksOriginal from '../services/extractLinks.js';
+// import extractInformationOriginal from '../services/extractInformation.js';
+// import enrollIntoCourseOriginal from '../services/enrollIntoCourse.js'
+// import setCookiesOriginal from '../services/setCookies.js'
+// import handleCourseEnrollmentOriginal from '../services/handleCourseEnrollment.js'
+// import findNewCoursesOriginal from '../services/findNewCourses.js'
+
+// import accessFreeCourseWebsite from '../services/accessFreeCourseWebsite.js'
+// import extractLinks from '../services/extractLinks.js';
+import { checkCourses, checkEnrollment } from '../services/extractInformation.js';
+// import enrollIntoCourse from '../services/enrollIntoCourse.js'
+import setCookies from '../services/setCookies.js'
+import checkoutCourse from '../services/handleCourseEnrollment.js'
+import fetchAndCompareCourses from '../services/fetchAndCompareCourses.js'
+// import { checkEnrollment } from '../services/extractInformation.js';
 
 
-function wrapWithErrorHandler(functions) {
-  return functions.map(fn => withErrorHandling(fn));
-}
+// function wrapWithErrorHandler(functions) {
+//   return functions.map(fn => withErrorHandling(fn));
+// }
 
 puppeteer.use(StealthPlugin());
 
@@ -50,58 +59,36 @@ async function closeBrowserInstance() {
 export default async function scrapeSite() {
   const browser = await getBrowserInstance();
 
-  const [
-    accessFreeCourseWebsite,
-    extractLinks,
-    extractInformation,
-    enrollIntoCourse,
-    setCookies,
-    handleCourseEnrollment,
-    findNewCourses,
-  ] = wrapWithErrorHandler([
-    accessFreeCourseWebsiteOriginal,
-    extractLinksOriginal,
-    extractInformationOriginal,
-    enrollIntoCourseOriginal,
-    setCookiesOriginal,
-    handleCourseEnrollmentOriginal,
-    findNewCoursesOriginal
-  ]);
-
-  class Course {
-    name = '';
-    status = '';
-    udemyLink = '';
-    findmycourseLink = '';
-    description = '';
-    price = '';
-    rating = '';
-    lengthInHours = '';
-  }
+  // const [
+  //   accessFreeCourseWebsite,
+  //   extractLinks,
+  //   extractInformation,
+  //   enrollIntoCourse,
+  //   setCookies,
+  //   handleCourseEnrollment,
+  //   findNewCourses,
+  // ] = wrapWithErrorHandler([
+  //   accessFreeCourseWebsiteOriginal,
+  //   extractLinksOriginal,
+  //   extractInformationOriginal,
+  //   enrollIntoCourseOriginal,
+  //   setCookiesOriginal,
+  //   handleCourseEnrollmentOriginal,
+  //   findNewCoursesOriginal
+  // ]);
 
   const startTime = new Date();
 
-  const page = await accessFreeCourseWebsite(browser)
+  // const page = await accessFreeCourseWebsite(browser)
 
-  const links = await extractLinks(page);
+  // const links = await extractLinks(page);
 
-  const newLinks = await findNewCourses(links);
+  // const newLinks = await findNewCourses(links);
 
-  if (newLinks.length === 0) {
-    await browser.close();
-    console.log(`No new courses found`);
-    return;
-  }
+  const courses = await fetchAndCompareCourses();
 
 
-  const courses = newLinks.map(link => {
-    const course = new Course();
-    course.findmycourseLink = link;
-    return course;
-  });
-
-
-  await Promise.all(courses.map(extractInformation));
+  // await Promise.all(courses.map(extractInformation));
 
 
   const tempCookiePage = await browser.newPage();
@@ -114,14 +101,45 @@ export default async function scrapeSite() {
     await tempCookiePage.close();
   }
 
+  // Extract Udemy IDs and coupon codes from the courses array
+  // console.log(courses);
+  const courseIds = courses.map(course => course.udemyCourseId);
+  const couponCodes = courses.map(course => course.courseCoupon);
 
-  const enrollmentResults = await Promise.all(courses.map(enrollIntoCourse));
+  console.log(courseIds);
+  console.log(couponCodes);
 
-  for (const enrollmentResult of enrollmentResults) {
-    if (enrollmentResult != null) {
-      await handleCourseEnrollment(enrollmentResult);
+
+  // Pass the Udemy IDs and coupon codes to the checkCourses function
+  const freeCourses = await checkCourses(courseIds, couponCodes);
+
+  console.log(freeCourses);
+
+  // Check enrollment for all courses concurrently
+  const enrollmentStatuses = await Promise.all(freeCourses.map(course => checkEnrollment(course.courseId)));
+
+  // Filter out already enrolled courses
+  const notEnrolledCourses = freeCourses.filter((course, index) => {
+    if (enrollmentStatuses[index]) {
+      console.log(`You are already enrolled in course ${course.courseId}`);
+      return false;
     }
-  }
+    return true;
+  });
+
+  console.log(notEnrolledCourses);
+
+  // const resultCheckoutCourses = await Promise.all(notEnrolledCourses.map(checkoutCourse));
+
+  // const enrollmentResults = await Promise.all(courses.map(enrollIntoCourse));
+
+  // const enrollmentResults = await Promise.all(freeCourseIds.map(checkoutCourse));
+
+  // for (const enrollmentResult of enrollmentResults) {
+  //   if (enrollmentResult != null) {
+  //     await handleCourseEnrollment(enrollmentResult);
+  //   }
+  // }
 
 
   const endTime = new Date();

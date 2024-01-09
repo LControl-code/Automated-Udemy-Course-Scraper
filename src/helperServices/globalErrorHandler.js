@@ -1,4 +1,5 @@
 import fs from 'fs';
+import * as Sentry from "@sentry/node";
 
 function logAndClear(error) {
   const date = new Date();
@@ -9,19 +10,20 @@ function logAndClear(error) {
 
   fs.appendFileSync('logs/error.log', errorMessage);
   fs.writeFileSync('data/previousRunSiteList.json', '');
+
+  Sentry.captureException(error);
 }
 
 export function handleUncaughtErrors() {
   process.on('uncaughtException', (err) => {
     console.error('There was an uncaught error', err);
     logAndClear(err);
-    process.exit(1);
+    throw err;
   });
 
   process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Rejection at:', promise, 'reason:', reason);
     logAndClear(reason);
-    process.exit(1);
   });
 }
 
