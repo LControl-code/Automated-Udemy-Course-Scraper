@@ -1,9 +1,10 @@
-import { bringPageToFront, getPageTitle } from '../helperServices/pageHelpers.js';
+import { bringPageToFront, getPageTitle, createNewPageAndGoToLink } from '../helperServices/pageHelpers.js';
 import { waitForUrl } from '../helperServices/navigationHelpers.js';
 import { logEnrollmentStatus } from '../helperServices/loggingHelpers.js';
 import { clickButton } from '../helperServices/buttonClickHelpers.js';
-import { checkCourses } from './extractInformation.js';
-import { createNewPageAndGoToLink } from '../helperServices/pageHelpers.js';
+import { Mutex } from 'async-mutex';
+
+const mutex = new Mutex();
 
 export async function clickButtonWithEnvCheck(page, pageTitle, envVar, buttonToClick) {
   const buttonSelector = process.env[envVar];
@@ -49,16 +50,23 @@ export async function handleCourseEnrollment(courseResult) {
 }
 
 export default async function checkoutCourse(course) {
-  const { courseId, couponCode } = course;
-  const pageLink = `https://www.udemy.com/payment/checkout/express/course/${courseId}/?discountCode=${couponCode}`
+  const { id, coupon } = course;
+  const pageLink = `https://www.udemy.com/payment/checkout/express/course/${id}/?discountCode=${coupon}`
 
-  const checkoutPage = await createNewPageAndGoToLink(pageLink);
+  let checkoutPage = null;
+  const release = await mutex.acquire();
+  try {
+    checkoutPage = await createNewPageAndGoToLink(pageLink);
+    const pageTitle = await getPageTitle(checkoutPage);
 
-  const pageTitle = await getPageTitle(checkoutPage);
+    await bringPageToFront(checkoutPage);
+    await new Promise(resolve => setTimeout(resolve, 750));
+    await clickButtonWithEnvCheck(checkoutPage, pageTitle, 'CHECKOUT_BUTTON');
+    await waitForUrl(checkoutPage, "https://www.udemy.com/cart/success/");
+  } finally {
+    release();
+  }
 
-  await clickButtonWithEnvCheck(checkoutPage, pageTitle, 'CHECKOUT_BUTTON');
-
-  await waitForUrl(checkoutPage, "https://www.udemy.com/cart/success/");
 
   await checkoutPage.close();
 
