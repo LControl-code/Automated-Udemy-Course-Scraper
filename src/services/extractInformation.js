@@ -68,6 +68,15 @@ export async function checkCourses(courseData) {
     const freeCourses = Object.entries(data.courses)
       .filter(([, course]) => course.price['amount'] === 0 && course.price['price_string'] === 'Free')
       .map(([id]) => courseData.find(course => course.id === Number(id)));
+
+    if (freeCourses.length === 0) {
+      addBreadcrumb({
+        category: 'Course Validation',
+        message: 'No free courses found',
+        level: 'info',
+      });
+      return;
+    }
     span3.finish();
 
     addBreadcrumb({

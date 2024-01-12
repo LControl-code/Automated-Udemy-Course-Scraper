@@ -141,6 +141,12 @@ export default async function scrapeSite() {
       },
     });
 
+    if (freeCourses.length === 0) {
+      console.log('No new courses found');
+      await closeBrowserInstance();
+      return;
+    }
+
     // Check enrollment for all courses concurrently
     const enrollmentStatuses = await Promise.all(freeCourses.map(course => checkEnrollment(course)));
 
