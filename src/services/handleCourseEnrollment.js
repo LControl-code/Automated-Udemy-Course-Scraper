@@ -1,8 +1,9 @@
 import { bringPageToFront, getPageTitle, createNewPageAndGoToLink } from '../helperServices/pageHelpers.js';
-import { waitForUrl } from '../helperServices/navigationHelpers.js';
+import { waitForUrl, waitForUrlChange } from '../helperServices/navigationHelpers.js';
 import { logEnrollmentStatus } from '../helperServices/loggingHelpers.js';
 import { clickButton } from '../helperServices/buttonClickHelpers.js';
 import { Mutex } from 'async-mutex';
+import { addBreadcrumb } from '@sentry/node';
 
 const mutex = new Mutex();
 
@@ -54,20 +55,28 @@ export default async function checkoutCourse(course) {
   const pageLink = `https://www.udemy.com/payment/checkout/express/course/${id}/?discountCode=${coupon}`
 
   let checkoutPage = null;
+  let pageUrl = null;
   const release = await mutex.acquire();
   try {
     checkoutPage = await createNewPageAndGoToLink(pageLink);
-    const pageTitle = await getPageTitle(checkoutPage);
+    pageUrl = checkoutPage.url();
 
     await bringPageToFront(checkoutPage);
     await new Promise(resolve => setTimeout(resolve, 750));
-    await clickButtonWithEnvCheck(checkoutPage, pageTitle, 'CHECKOUT_BUTTON');
-    await waitForUrl(checkoutPage, "https://www.udemy.com/cart/success/");
+    await clickButtonWithEnvCheck(checkoutPage, course, 'CHECKOUT_BUTTON');
+    await new Promise(resolve => setTimeout(resolve, 250));
   } finally {
     release();
   }
-
+  const resultPage = await waitForUrlChange(checkoutPage, pageUrl);
+  if (resultPage !== true) {
+    addBreadcrumb({
+      category: 'checkout',
+      message: `Checkout redirect took too long. Error in pages: ${resultPage}`,
+      level: 'warning',
+    });
+    console.error("Error: checkout redirect took too long", resultPage);
+  }
 
   await checkoutPage.close();
-
 }
