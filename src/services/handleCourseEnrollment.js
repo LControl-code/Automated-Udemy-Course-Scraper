@@ -3,7 +3,7 @@ import { waitForUrl, waitForUrlChange } from '../helperServices/navigationHelper
 import { logEnrollmentStatus } from '../helperServices/loggingHelpers.js';
 import { clickButton } from '../helperServices/buttonClickHelpers.js';
 import { Mutex } from 'async-mutex';
-import { addBreadcrumb } from '@sentry/node';
+import { addBreadcrumb, startTransaction, captureException } from '@sentry/node';
 
 const mutex = new Mutex();
 
@@ -57,26 +57,60 @@ export default async function checkoutCourse(course) {
   let checkoutPage = null;
   let pageUrl = null;
   const release = await mutex.acquire();
-  try {
-    checkoutPage = await createNewPageAndGoToLink(pageLink);
-    pageUrl = checkoutPage.url();
+  addBreadcrumb({
+    category: 'checkout',
+    message: `Starting checkout for course: ${id}`,
+    level: 'info',
+    data: {
+      courseInfo: course,
+    },
+  });
 
-    await bringPageToFront(checkoutPage);
-    await new Promise(resolve => setTimeout(resolve, 750));
-    await clickButtonWithEnvCheck(checkoutPage, course, 'CHECKOUT_BUTTON');
-    await new Promise(resolve => setTimeout(resolve, 250));
-  } finally {
-    release();
+  const transaction = startTransaction({
+    op: 'checkout',
+    name: `Checkout for course: ${id}`,
+  });
+
+  try {
+    try {
+      const span = transaction.startChild({ op: 'task', description: 'Enrolling into course, using id and coupon' });
+      checkoutPage = await createNewPageAndGoToLink(pageLink);
+      pageUrl = checkoutPage.url();
+
+      await bringPageToFront(checkoutPage);
+      await new Promise(resolve => setTimeout(resolve, 750));
+      await clickButtonWithEnvCheck(checkoutPage, course, 'CHECKOUT_BUTTON');
+      span.finish();
+    } finally {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      release();
+    }
+    const resultPage = await waitForUrlChange(checkoutPage, pageUrl);
+
+    if (resultPage !== true) {
+      addBreadcrumb({
+        category: 'checkout',
+        message: `Checkout redirect took too long. Error in pages: ${resultPage}`,
+        level: 'warning',
+      });
+      console.error("Error: checkout redirect took too long", resultPage);
+    }
+
+  } catch (error) {
+    captureException(error);
+    throw error;
   }
-  const resultPage = await waitForUrlChange(checkoutPage, pageUrl);
-  if (resultPage !== true) {
-    addBreadcrumb({
-      category: 'checkout',
-      message: `Checkout redirect took too long. Error in pages: ${resultPage}`,
-      level: 'warning',
-    });
-    console.error("Error: checkout redirect took too long", resultPage);
-  }
+
+  addBreadcrumb({
+    category: 'checkout',
+    message: `Enrollment successful for course: ${id}`,
+    level: 'info',
+    data: {
+      courseInfo: course,
+    },
+  });
+
+  transaction.finish();
 
   await checkoutPage.close();
 }
