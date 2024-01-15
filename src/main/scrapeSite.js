@@ -141,7 +141,7 @@ export default async function scrapeSite() {
       },
     });
 
-    if (freeCourses.length === 0) {
+    if (!freeCourses || freeCourses?.length === 0) {
       console.log('No new courses found');
       await closeBrowserInstance();
       return;
@@ -153,7 +153,7 @@ export default async function scrapeSite() {
     // Filter out already enrolled courses
     const notEnrolledCourses = freeCourses.filter((course, index) => !enrollmentStatuses[index]);
 
-    if (notEnrolledCourses.length === 0) {
+    if (!notEnrolledCourses || notEnrolledCourses?.length === 0) {
       console.log('No new courses found');
       await closeBrowserInstance();
       return;
