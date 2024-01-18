@@ -68,7 +68,10 @@ export default async function checkoutCourse(course) {
 
   const transaction = startTransaction({
     op: 'checkout',
-    name: `Checkout for course: ${id}`,
+    name: 'Checkout of a course',
+    data: {
+      courseInfo: course,
+    },
   });
 
   try {

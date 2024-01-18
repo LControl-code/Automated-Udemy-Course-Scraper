@@ -82,9 +82,10 @@ async function runAndReschedule() {
       console.log('Restarting process...');
       process.kill(process.pid, 'SIGUSR2');
     }
+  } finally {
+    // Finish the transaction
+    transaction.finish();
   }
-
-  transaction.finish();
   // Schedule this function to run again in 60'000 ms * 5 = 5 minutes 
   setTimeout(() => { runAndReschedule(); }, 60000 * 5);
 }
