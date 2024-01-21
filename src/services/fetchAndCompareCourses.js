@@ -42,7 +42,10 @@ export default async function fetchAndCompareCourses() {
 
     const newCourses = data.courses.filter(course => !existingLinks.includes(course.courseLink))
       .map(course => {
-        const courseCoupon = course.courseLink.split('=').pop();
+        let courseCoupon = '';
+        if (course.courseLink) {
+          courseCoupon = course.courseLink.split('=').pop();
+        }
         return { ...course, courseCoupon };
       });
     span2.finish();
