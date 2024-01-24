@@ -153,23 +153,29 @@ export default async function scrapeSite() {
     // Filter out already enrolled courses
     const notEnrolledCourses = freeCourses.filter((course, index) => !enrollmentStatuses[index]);
 
-    if (!notEnrolledCourses || notEnrolledCourses?.length === 0) {
-      console.log('No new courses found');
-      await closeBrowserInstance();
-      return;
-    }
+    // Filter the notEnrolledCourses array to include only the courses that are also in freeCourses
+    const coursesToEnroll = notEnrolledCourses.filter(course =>
+      freeCourses.some(freeCourse => freeCourse.id === course.id)
+    );
 
     addBreadcrumb({
       category: 'shouldScrape',
       message: 'Not enrolled and free courses filtered',
       level: 'info',
       data: {
-        notEnrolledCourses: notEnrolledCourses || "No courses found",
+        coursesToEnroll: coursesToEnroll || "No courses found",
       },
     });
 
+    if (!coursesToEnroll || coursesToEnroll?.length === 0) {
+      console.log('No new courses found');
+      await closeBrowserInstance();
+      return;
+    }
 
-    await Promise.all(notEnrolledCourses.map(checkoutCourse));
+
+    await Promise.all(coursesToEnroll.map(checkoutCourse));
+
 
     const endTime = new Date();
     const executionTime = endTime - startTime;

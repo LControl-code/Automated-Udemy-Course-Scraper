@@ -41,9 +41,9 @@ export default async function fetchAndCompareCourses() {
     });
 
     const newCourses = data.courses.filter(course => !existingLinks.includes(course.courseLink))
-      .map(course => {
+      .map(({ source, id, webLink, createdAt, ...course }) => {
         let courseCoupon = '';
-        if (course.courseLink) {
+        if (course.courseLink?.includes('=')) {
           courseCoupon = course.courseLink.split('=').pop();
         }
         return { ...course, courseCoupon };
@@ -62,7 +62,7 @@ export default async function fetchAndCompareCourses() {
       },
     });
 
-    if (newCourses.length === 0) {
+    if (newCourses.length === 0 || newCourses.courseCoupon === '') {
       return;
     }
 

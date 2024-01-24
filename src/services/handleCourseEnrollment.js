@@ -51,8 +51,8 @@ export async function handleCourseEnrollment(courseResult) {
 }
 
 export default async function checkoutCourse(course) {
-  const { id, coupon } = course;
-  const pageLink = `https://www.udemy.com/payment/checkout/express/course/${id}/?discountCode=${coupon}`
+  const { udemyCourseId, courseCoupon } = course;
+  const pageLink = `https://www.udemy.com/payment/checkout/express/course/${udemyCourseId}/?discountCode=${courseCoupon}`
 
   let checkoutPage = null;
   let pageUrl = null;
