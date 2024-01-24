@@ -57,12 +57,16 @@ export default async function checkoutCourse(course) {
   let checkoutPage = null;
   let pageUrl = null;
   const release = await mutex.acquire();
+
   addBreadcrumb({
     category: 'checkout',
-    message: `Starting checkout for course: ${id}`,
+    message: `Starting checkout for course: ${udemyCourseId}`,
     level: 'info',
     data: {
-      courseInfo: course,
+      courseInfo: {
+        id: udemyCourseId,
+        coupon: courseCoupon,
+      },
     },
   });
 
@@ -106,10 +110,13 @@ export default async function checkoutCourse(course) {
 
   addBreadcrumb({
     category: 'checkout',
-    message: `Enrollment successful for course: ${id}`,
+    message: `Enrollment successful for course: ${udemyCourseId}`,
     level: 'info',
     data: {
-      courseInfo: course,
+      courseInfo: {
+        id: udemyCourseId,
+        coupon: courseCoupon,
+      },
     },
   });
 

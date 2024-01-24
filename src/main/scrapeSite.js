@@ -153,9 +153,9 @@ export default async function scrapeSite() {
     // Filter out already enrolled courses
     const notEnrolledCourses = freeCourses.filter((course, index) => !enrollmentStatuses[index]);
 
-    // Filter the notEnrolledCourses array to include only the courses that are also in freeCourses
-    const coursesToEnroll = notEnrolledCourses.filter(course =>
-      freeCourses.some(freeCourse => freeCourse.id === course.id)
+    // Filter the courses array to include only the courses that are also in notEnrolledCourses
+    const coursesToEnroll = courses.filter(course =>
+      notEnrolledCourses.some(notEnrolledCourse => notEnrolledCourse.id === course.udemyCourseId)
     );
 
     addBreadcrumb({
