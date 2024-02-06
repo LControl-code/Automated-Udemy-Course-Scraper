@@ -29,7 +29,7 @@ async function getBrowserInstance() {
       });
 
       browser = await puppeteer.launch({
-        headless: false,
+        headless: 'new',
         defaultViewport: {
           width: 1920,
           height: 1080,
