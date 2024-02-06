@@ -20,28 +20,47 @@ export default async function extractInformation(course) {
 
 }
 
-// Check if courses are still free
-export async function checkCourses(courseData) {
+/**
+ * Checks if the provided courses are still free.
+ * 
+ * This function performs the following steps:
+ * 1. Starts a transaction for the operation.
+ * 2. Reads the cookie string from a file.
+ * 3. Extracts the course IDs and coupon codes from the provided courses.
+ * 4. Constructs the URL for the price check API.
+ * 5. Makes an HTTP request to the price check API and parses the response.
+ * 6. Finds the free courses in the response data.
+ * 7. Updates the `debug.isFree` property of the free courses.
+ * 8. Returns the free courses.
+ * 
+ * @param {Array} courses - The courses to check.
+ * @returns {Promise<Array>} An array of free courses, or undefined if there are no free courses.
+ * @throws {Error} If there is an error during the operation.
+ */
+export async function checkCourses(courses) {
   const transaction = startTransaction({ op: 'checkCourses', name: 'Check if courses are still free' });
 
   try {
     const cookieString = fs.readFileSync('data/cookiesString.txt', 'utf8')
 
     const span1 = transaction.startChild({ op: 'extractCourseInfo', description: 'Extract course IDs and coupon codes' });
-    const courseIds = courseData.map(course => course.id);
-    const couponCodes = courseData.map(course => course.coupon);
+
+    const coursesData = {
+      id: courses.map(course => course.udemyCourseId),
+      coupon: courses.map(course => course.couponCode),
+    }
     span1.finish();
 
-    const urlPriceCheck = `https://www.udemy.com/api-2.0/pricing/?course_ids=${courseIds.join(',')}&fields[pricing_result]=price,price_detail&discountCode=${couponCodes.join(',')}`
+    const urlPriceCheck = `https://www.udemy.com/api-2.0/pricing/?course_ids=${coursesData.id.join(',')}&fields[pricing_result]=price,price_detail&discountCode=${coursesData.coupon.join(',')}`
 
     addBreadcrumb({
       category: 'Course Validation',
       message: 'Initiating check for free courses',
       level: 'info',
       data: {
-        totalCoursesChecked: courseIds.length,
-        courseIds: courseIds,
-        couponCodes: couponCodes,
+        totalCoursesChecked: coursesData.id.length,
+        courseIds: coursesData.id,
+        couponCodes: coursesData.coupon,
         apiEndpoint: urlPriceCheck,
       },
     });
@@ -60,16 +79,17 @@ export async function checkCourses(courseData) {
       message: 'Received data from API',
       level: 'info',
       data: {
-        receivedData: JSON.stringify(data, null, 2),
+        receivedData: JSON.stringify(data, null, 2) || "No data received",
       },
     });
 
     const span3 = transaction.startChild({ op: 'findFreeCourses', description: 'Find free courses in the response data' });
+
     const freeCourses = Object.entries(data.courses)
       .filter(([, course]) => course.price['amount'] === 0 && course.price['price_string'] === 'Free')
-      .map(([id]) => courseData.find(course => course.id === Number(id)));
+      .map(([id]) => courses.find(course => course.udemyCourseId === Number(id)));
 
-    if (freeCourses.length === 0) {
+    if (!freeCourses || freeCourses?.length === 0) {
       addBreadcrumb({
         category: 'Course Validation',
         message: 'No free courses found',
@@ -77,23 +97,32 @@ export async function checkCourses(courseData) {
       });
       return;
     }
+
+    const freeCourseIds = freeCourses.map(course => Number(course.udemyCourseId));
+    const filteredCourses = courses.filter(course => freeCourseIds.includes(Number(course.udemyCourseId)));
+    courses.forEach(course => {
+      if (freeCourseIds.includes(course.udemyCourseId)) {
+        course.debug.isFree = true;
+      }
+    });
+
     span3.finish();
 
     addBreadcrumb({
       category: 'Course Validation',
-      message: `Completed check for free courses. Found ${freeCourses.length} free courses.`,
+      message: `Completed check for free courses. Found ${filteredCourses.length} free courses.`,
       level: 'info',
       data: {
-        totalFreeCourses: freeCourses.length,
-        freeCourseIds: freeCourses.map(course => course.id),
+        totalFreeCourses: filteredCourses.length,
+        freeCourseIds: JSON.stringify(freeCourseIds, null, 2),
+        freeCourses: JSON.stringify(filteredCourses, null, 2),
+        freeCoursesData: JSON.stringify(freeCourses, null, 2),
       },
     });
 
-    if (freeCourses.length === 0) {
-      return null;
-    }
 
-    return freeCourses;
+
+    return filteredCourses;
   } catch (error) {
     captureException(error);
     throw error;
@@ -106,15 +135,17 @@ export async function checkCourses(courseData) {
 export async function checkEnrollment(course) {
   const transaction = startTransaction({ op: 'checkEnrollment', name: 'Check course enrollment' });
 
-  try {
+  const courseId = course.udemyCourseId;
+  const couponCode = course.couponCode;
 
+  try {
     addBreadcrumb({
       category: 'Course Enrollment Check',
-      message: `Initiating enrollment check for course with ID: ${course.id}`,
+      message: `Initiating enrollment check for course with ID: ${courseId}`,
       level: 'info',
       data: {
-        courseId: course.id,
-        couponCode: course.coupon,
+        courseId: courseId,
+        couponCode: couponCode,
       },
     });
 
@@ -122,16 +153,16 @@ export async function checkEnrollment(course) {
 
     addBreadcrumb({
       category: 'HTTP Request',
-      message: `Sending request to redeem coupon for course with ID: ${course.id}`,
+      message: `Sending request to redeem coupon for course with ID: ${courseId}`,
       level: 'info',
       data: {
-        courseId: course.id,
-        requestUrl: `https://www.udemy.com/api-2.0/course-landing-components/${course.id}/me/?components=redeem_coupon`,
+        courseId: courseId,
+        requestUrl: `https://www.udemy.com/api-2.0/course-landing-components/${courseId}/me/?components=redeem_coupon`,
       },
     });
 
     const span1 = transaction.startChild({ op: 'checkCourseEnrollment', description: 'Make HTTP request to check course enrollment and parse response' });
-    const response = await fetch(`https://www.udemy.com/api-2.0/course-landing-components/${course.id}/me/?components=redeem_coupon`, {
+    const response = await fetch(`https://www.udemy.com/api-2.0/course-landing-components/${courseId}/me/?components=redeem_coupon`, {
       headers: {
         'Cookie': cookieString
       }
@@ -146,11 +177,11 @@ export async function checkEnrollment(course) {
 
     addBreadcrumb({
       category: 'Course Enrollment Check',
-      message: `Completed enrollment check for course with ID: ${course.id}. ${hasAlreadyPurchased ? 'Course already purchased.' : 'Course not purchased yet.'}`,
+      message: `Completed enrollment check for course with ID: ${courseId}. ${hasAlreadyPurchased ? 'Course already purchased.' : 'Course not purchased yet.'}`,
       level: 'info',
       data: {
-        courseId: course.id,
-        couponCode: course.coupon,
+        courseId: courseId,
+        couponCode: couponCode,
         hasAlreadyPurchased: hasAlreadyPurchased,
       },
     });

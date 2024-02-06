@@ -51,12 +51,36 @@ export async function handleCourseEnrollment(courseResult) {
 }
 
 export default async function checkoutCourse(course) {
-  const { udemyCourseId, courseCoupon } = course;
-  const pageLink = `https://www.udemy.com/payment/checkout/express/course/${udemyCourseId}/?discountCode=${courseCoupon}`
+  const udemyCourseId = course.udemyCourseId;
+  const couponCode = course.couponCode;
+  if (!udemyCourseId || !couponCode) {
+    course.debug.error.status = true;
+    course.debug.error.message = "udemyCourseId or couponCode is not defined";
+    course.debug.error.stack = "course";
+    return;
+  }
+
+  const pageLink = course.udemyUrls.checkoutLink;
 
   let checkoutPage = null;
   let pageUrl = null;
-  const release = await mutex.acquire();
+
+  if (course.debug.error.status) {
+    console.log("Course has encountered an error before. Skipping enrollment:", udemyCourseId);
+    console.error("Error message: ", course.debug.error.message);
+    console.error("Stack trace: ", course.debug.error.stack)
+    return;
+  }
+
+  if (course.debug.isEnrolled) {
+    console.log("Course is already enrolled. Skipping enrollment:", udemyCourseId);
+    return;
+  }
+
+  if (!course.debug.isFree) {
+    console.log("Course is not free. Skipping enrollment:", udemyCourseId);
+    return;
+  }
 
   addBreadcrumb({
     category: 'checkout',
@@ -65,10 +89,12 @@ export default async function checkoutCourse(course) {
     data: {
       courseInfo: {
         id: udemyCourseId,
-        coupon: courseCoupon,
+        coupon: couponCode,
       },
     },
   });
+
+  course.debug.error.status = false;
 
   const transaction = startTransaction({
     op: 'checkout',
@@ -79,6 +105,7 @@ export default async function checkoutCourse(course) {
   });
 
   try {
+    const release = await mutex.acquire();
     try {
       const span = transaction.startChild({ op: 'task', description: 'Enrolling into course, using id and coupon' });
       checkoutPage = await createNewPageAndGoToLink(pageLink);
@@ -88,25 +115,54 @@ export default async function checkoutCourse(course) {
       await new Promise(resolve => setTimeout(resolve, 750));
       await clickButtonWithEnvCheck(checkoutPage, course, 'CHECKOUT_BUTTON');
       span.finish();
+    } catch (error) {
+      addBreadcrumb({
+        category: 'checkout',
+        message: `Error in checkout for course: ${udemyCourseId}`,
+        level: 'error',
+        data: {
+          courseInfo: {
+            id: udemyCourseId,
+            coupon: couponCode,
+            page: checkoutPage,
+            pageUrl: pageUrl,
+          },
+        },
+      });
+
+      throw error;
     } finally {
       await new Promise(resolve => setTimeout(resolve, 250));
-      release();
     }
     const resultPage = await waitForUrlChange(checkoutPage, pageUrl);
+    release();
 
     if (resultPage !== true) {
       addBreadcrumb({
         category: 'checkout',
-        message: `Checkout redirect took too long. Error in pages: ${resultPage}`,
+        message: `Checkout redirect took too long. Error in page: ${resultPage}`,
         level: 'warning',
       });
-      console.error("Error: checkout redirect took too long", resultPage);
+      throw new Error("Checkout redirect took too long");
     }
 
+    course.debug.isEnrolled = true;
+    course.debug.error.status = false;
+    course.debug.error.message = '';
+    course.debug.error.stack = '';
   } catch (error) {
     captureException(error);
-    throw error;
+    course.debug.error.status = true;
+    course.debug.isEnrolled = false;
+    course.debug.error.message = error.message;
+    course.debug.error.stack = error.stack;
+
+    if (checkoutPage) {
+      await checkoutPage.close();
+    }
   }
+
+
 
   addBreadcrumb({
     category: 'checkout',
@@ -115,7 +171,7 @@ export default async function checkoutCourse(course) {
     data: {
       courseInfo: {
         id: udemyCourseId,
-        coupon: courseCoupon,
+        coupon: couponCode,
       },
     },
   });

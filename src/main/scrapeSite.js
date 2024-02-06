@@ -13,6 +13,7 @@ import { checkCourses, checkEnrollment } from '../services/extractInformation.js
 import setCookies from '../services/setCookies.js'
 import checkoutCourse from '../services/handleCourseEnrollment.js'
 import fetchAndCompareCourses from '../services/fetchAndCompareCourses.js'
+import dataWrite from '../services/dataWrite.js'
 
 puppeteer.use(StealthPlugin());
 
@@ -28,7 +29,7 @@ async function getBrowserInstance() {
       });
 
       browser = await puppeteer.launch({
-        headless: 'new',
+        headless: false,
         defaultViewport: {
           width: 1920,
           height: 1080,
@@ -80,6 +81,16 @@ export default async function scrapeSite() {
   });
 
   try {
+
+    const startTime = new Date();
+
+    let courses = await fetchAndCompareCourses();
+
+    if (!courses || courses?.length === 0) {
+      console.log('No new courses found');
+      return;
+    }
+
     const browser = await getBrowserInstance();
 
     addBreadcrumb({
@@ -87,16 +98,6 @@ export default async function scrapeSite() {
       message: 'Browser instance obtained',
       level: 'info',
     });
-
-    const startTime = new Date();
-
-    const courses = await fetchAndCompareCourses();
-
-    if (!courses) {
-      console.log('No new courses found');
-      await closeBrowserInstance();
-      return;
-    }
 
     const tempCookiePage = await browser.newPage();
     await tempCookiePage.setViewport({
@@ -114,23 +115,8 @@ export default async function scrapeSite() {
       level: 'info',
     });
 
-    // Extract Udemy IDs and coupon codes from the courses array
-    const courseData = courses.map(course => ({
-      id: course.udemyCourseId,
-      coupon: course.courseCoupon
-    }));
-
-    addBreadcrumb({
-      category: 'shouldScrape',
-      message: 'Course IDs and coupon codes extracted',
-      level: 'info',
-      data: {
-        courseData: courseData || "No course data found",
-      },
-    });
-
     // Pass the Udemy IDs and coupon codes to the checkCourses function
-    const freeCourses = await checkCourses(courseData);
+    const freeCourses = await checkCourses(courses);
 
     addBreadcrumb({
       category: 'shouldScrape',
@@ -138,12 +124,14 @@ export default async function scrapeSite() {
       level: 'info',
       data: {
         freeCourses: freeCourses || "No courses found",
+        courses: JSON.stringify(courses, null, 2) || "No courses found",
       },
     });
 
     if (!freeCourses || freeCourses?.length === 0) {
       console.log('No new courses found');
       await closeBrowserInstance();
+      await dataWrite(courses);
       return;
     }
 
@@ -153,9 +141,17 @@ export default async function scrapeSite() {
     // Filter out already enrolled courses
     const notEnrolledCourses = freeCourses.filter((course, index) => !enrollmentStatuses[index]);
 
+    courses.forEach(course => {
+      if (!notEnrolledCourses.some(notEnrolledCourse => notEnrolledCourse.udemyCourseId === course.udemyCourseId)) {
+        course.debug.isEnrolled = true;
+      } else {
+        course.debug.isEnrolled = false;
+      }
+    });
+
     // Filter the courses array to include only the courses that are also in notEnrolledCourses
     const coursesToEnroll = courses.filter(course =>
-      notEnrolledCourses.some(notEnrolledCourse => notEnrolledCourse.id === course.udemyCourseId)
+      notEnrolledCourses.some(notEnrolledCourse => notEnrolledCourse.udemyCourseId === course.udemyCourseId)
     );
 
     addBreadcrumb({
@@ -167,15 +163,22 @@ export default async function scrapeSite() {
       },
     });
 
+
     if (!coursesToEnroll || coursesToEnroll?.length === 0) {
       console.log('No new courses found');
       await closeBrowserInstance();
       return;
     }
 
-
     await Promise.all(coursesToEnroll.map(checkoutCourse));
+    courses.forEach((course, index) => {
+      const enrolledCourse = coursesToEnroll.find(enrolledCourse => enrolledCourse.udemyCourseId === course.udemyCourseId);
+      if (enrolledCourse) {
+        courses[index].debug = enrolledCourse.debug;
+      }
+    });
 
+    await dataWrite(courses);
 
     const endTime = new Date();
     const executionTime = endTime - startTime;
