@@ -4,3 +4,5 @@ logs/
 data/
 .hidden/
 .vscode/
+.dockerignore
+Dockerfile

@@ -14,6 +14,7 @@ import setCookies from '../services/setCookies.js'
 import checkoutCourse from '../services/handleCourseEnrollment.js'
 import fetchAndCompareCourses from '../services/fetchAndCompareCourses.js'
 import dataWrite from '../services/dataWrite.js'
+import databaseWrite from '../services/databaseWrite.js'
 
 puppeteer.use(StealthPlugin());
 
@@ -29,7 +30,7 @@ async function getBrowserInstance() {
       });
 
       browser = await puppeteer.launch({
-        headless: 'new',
+        headless: 'shell',
         defaultViewport: {
           width: 1920,
           height: 1080,
@@ -179,6 +180,9 @@ export default async function scrapeSite() {
     });
 
     await dataWrite(courses);
+
+    const enrolledCoursesForDatabase = courses.filter(course => course.debug.isEnrolled);
+    databaseWrite(enrolledCoursesForDatabase);
 
     const endTime = new Date();
     const executionTime = endTime - startTime;
