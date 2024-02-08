@@ -18,6 +18,7 @@
     "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "scripts": {
-    "start": "nodemon src/main/app.js"
+    "start": "nodemon src/main/app.js",
+    "clean-start": "echo -n > data/eTag.json && echo -n > data/previousRunSiteList.json && npm start"
   }
 }

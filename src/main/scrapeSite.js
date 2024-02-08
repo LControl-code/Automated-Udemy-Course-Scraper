@@ -30,7 +30,7 @@ async function getBrowserInstance() {
       });
 
       browser = await puppeteer.launch({
-        headless: 'shell',
+        headless: 'new',
         defaultViewport: {
           width: 1920,
           height: 1080,
@@ -167,6 +167,7 @@ export default async function scrapeSite() {
 
     if (!coursesToEnroll || coursesToEnroll?.length === 0) {
       console.log('No new courses found');
+      await dataWrite(courses);
       await closeBrowserInstance();
       return;
     }
