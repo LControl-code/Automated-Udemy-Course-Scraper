@@ -104,8 +104,8 @@ export default async function checkoutCourse(course) {
     },
   });
 
+  const release = await mutex.acquire();
   try {
-    const release = await mutex.acquire();
     try {
       const span = transaction.startChild({ op: 'task', description: 'Enrolling into course, using id and coupon' });
       checkoutPage = await createNewPageAndGoToLink(pageLink);
@@ -135,7 +135,6 @@ export default async function checkoutCourse(course) {
       await new Promise(resolve => setTimeout(resolve, 250));
     }
     const resultPage = await waitForUrlChange(checkoutPage, pageUrl);
-    release();
 
     if (resultPage !== true) {
       addBreadcrumb({
@@ -143,7 +142,18 @@ export default async function checkoutCourse(course) {
         message: `Checkout redirect took too long. Error in page: ${resultPage}`,
         level: 'warning',
       });
-      throw new Error("Checkout redirect took too long");
+
+      error = new Error("Checkout redirect took too long");
+      try {
+        await clickButtonWithEnvCheck(checkoutPage, course, 'CHECKOUT_BUTTON');
+        error = null;
+      } catch (err) {
+        console.error("Error in checkout enrollment #2:", err.message);
+        throw err;
+      }
+      if (error) {
+        throw error;
+      }
     }
 
     course.debug.isEnrolled = true;
@@ -156,7 +166,8 @@ export default async function checkoutCourse(course) {
     course.debug.isEnrolled = false;
     course.debug.error.message = error.message;
     course.debug.error.stack = error.stack;
-
+  } finally {
+    release();
     if (checkoutPage) {
       await checkoutPage.close();
     }
@@ -177,6 +188,4 @@ export default async function checkoutCourse(course) {
   });
 
   transaction.finish();
-
-  await checkoutPage.close();
 }
