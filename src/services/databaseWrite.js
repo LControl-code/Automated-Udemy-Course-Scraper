@@ -114,11 +114,16 @@ export default async function databaseWrite(courses) {
   try {
     await connectToDatabase();
 
-    const createPromises = courses.map(course => coursesModel.create(course));
+    const createPromises = courses.map(course =>
+      coursesModel.create(course).catch(error => {
+        captureException(error);
+        console.error("Duplicate course was trying to be written", error);
+      })
+    );
     await Promise.all(createPromises);
 
   } catch (error) {
     captureException(error);
-    throw error;
+    console.error("An error occurred while writing to the database", error);
   }
 }
