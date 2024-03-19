@@ -130,30 +130,34 @@ export default async function checkoutCourse(course) {
         },
       });
 
+      captureException(error);
+
       throw error;
     } finally {
       await new Promise(resolve => setTimeout(resolve, 250));
     }
-    const resultPage = await waitForUrlChange(checkoutPage, pageUrl);
 
-    if (resultPage !== true) {
-      addBreadcrumb({
-        category: 'checkout',
-        message: `Checkout redirect took too long. Error in page: ${resultPage}`,
-        level: 'warning',
-      });
+    try {
+      const resultPage = await waitForUrlChange(checkoutPage, pageUrl);
 
-      error = new Error("Checkout redirect took too long");
-      try {
-        await clickButtonWithEnvCheck(checkoutPage, course, 'CHECKOUT_BUTTON');
-        error = null;
-      } catch (err) {
-        console.error("Error in checkout enrollment #2:", err.message);
-        throw err;
+      if (resultPage !== true) {
+        addBreadcrumb({
+          category: 'checkout',
+          message: `Checkout redirect took too long. Error in page: ${resultPage}`,
+          level: 'warning',
+        });
+
+        try {
+          console.log("Checkout redirect took too long. Clicking checkout button again:", udemyCourseId);
+          await clickButtonWithEnvCheck(checkoutPage, course, 'CHECKOUT_BUTTON');
+        } catch (err) {
+          console.error("Error in checkout enrollment #2:", err.message);
+          throw err;
+        }
       }
-      if (error) {
-        throw error;
-      }
+    } catch (error) {
+      console.error("Checkout redirect took too long", error);
+      throw new Error("Checkout redirect took too long");
     }
 
     course.debug.isEnrolled = true;
