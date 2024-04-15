@@ -85,10 +85,12 @@ export async function checkCourses(courses) {
 
     const span3 = transaction.startChild({ op: 'findFreeCourses', description: 'Find free courses in the response data' });
 
-    const freeCourses = Object.entries(data.courses)
-      .filter(([, course]) => course.price['amount'] === 0 && course.price['price_string'] === 'Free')
-      .map(([id]) => courses.find(course => course.udemyCourseId === Number(id)));
-
+    let freeCourses;
+    if (data && data.courses) {
+      freeCourses = Object.entries(data.courses)
+        .filter(([, course]) => course.price['amount'] === 0 && course.price['price_string'] === 'Free')
+        .map(([id]) => courses.find(course => course.udemyCourseId === Number(id)));
+    }
     if (!freeCourses || freeCourses?.length === 0) {
       addBreadcrumb({
         category: 'Course Validation',
