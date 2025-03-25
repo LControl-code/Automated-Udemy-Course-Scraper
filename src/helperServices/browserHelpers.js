@@ -1,22 +1,22 @@
-import { browser } from '../main/scrapeSite.js';
+import { browser } from '../main/scrapeSite.js'
 
 /**
  * Get an instance of the browser.
  * If the browser is not already launched, it launches a new instance.
  * @returns {Promise<Browser>} The browser instance.
  */
-export async function getBrowserInstance() {
+export async function getBrowserInstance () {
   if (!browser) {
     browser = await puppeteer.launch({
       headless: 'new',
       defaultViewport: {
         width: 1920,
-        height: 1080,
+        height: 1080
       },
-      timeout: 100000,
-    });
+      timeout: 100000
+    })
   }
-  return browser;
+  return browser
 }
 
 /**
@@ -24,9 +24,9 @@ export async function getBrowserInstance() {
  * Sets the browser variable to null after closing.
  * @returns {Promise<void>}
  */
-export async function closeBrowserInstance() {
+export async function closeBrowserInstance () {
   if (browser) {
-    await browser.close();
-    browser = null;
+    await browser.close()
+    browser = null
   }
 }
