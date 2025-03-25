@@ -19,6 +19,12 @@ axiosRetry(axios, {
   },
 });
 
+/**
+ * Checks if scraping should be performed by comparing ETags.
+ * Fetches the ETag from the backend and compares it with the saved ETag.
+ * If the ETag has changed, it indicates that scraping should be performed.
+ * @returns {Promise<boolean>} True if scraping should be performed, false otherwise.
+ */
 export default async function shouldScrape() {
   const transaction = startTransaction({
     op: "shouldScrape",
@@ -78,7 +84,12 @@ export default async function shouldScrape() {
   }
 }
 
-
+/**
+ * Retrieves the ETag from the specified file.
+ * If the file does not exist, it creates a new file with an empty ETag.
+ * @param {string} eTagFilePath - The path to the ETag file.
+ * @returns {Promise<string>} The ETag value.
+ */
 async function getETag(eTagFilePath) {
   const transaction = startTransaction({
     op: "getETag",
@@ -117,6 +128,14 @@ async function getETag(eTagFilePath) {
   return eTagData.eTag;
 }
 
+/**
+ * Checks for updates by sending a HEAD request to the specified URL.
+ * Compares the ETag from the response with the old ETag.
+ * If the ETag has changed, it indicates that updates are available.
+ * @param {string} url - The URL to check for updates.
+ * @param {string} oldETag - The old ETag value.
+ * @returns {Promise<string|null>} The new ETag value if updates are available, otherwise null.
+ */
 async function checkForUpdates(url, oldETag) {
   const transaction = startTransaction({
     op: "checkForUpdates",

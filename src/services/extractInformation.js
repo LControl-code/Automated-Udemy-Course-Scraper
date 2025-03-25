@@ -3,6 +3,12 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import { addBreadcrumb, captureException, startTransaction } from '@sentry/node';
 
+/**
+ * Extracts information from the course page.
+ * Navigates to the course page and retrieves the Udemy link.
+ * @param {Object} course - The course object containing the findmycourse link.
+ * @returns {Promise<void>}
+ */
 export default async function extractInformation(course) {
   const link = course.findmycourseLink;
   const newPage = await browser.newPage();
@@ -17,7 +23,6 @@ export default async function extractInformation(course) {
   course.udemyLink = udemyLink;
 
   await newPage.close();
-
 }
 
 /**
@@ -122,8 +127,6 @@ export async function checkCourses(courses) {
       },
     });
 
-
-
     return filteredCourses;
   } catch (error) {
     captureException(error);
@@ -133,7 +136,20 @@ export async function checkCourses(courses) {
   }
 };
 
-// Check if a user is enrolled in a course
+/**
+ * Checks if a user is enrolled in a course.
+ * 
+ * This function performs the following steps:
+ * 1. Starts a transaction for the operation.
+ * 2. Reads the cookie string from a file.
+ * 3. Makes an HTTP request to the Udemy API to check the enrollment status.
+ * 4. Parses the response to determine if the user is already enrolled.
+ * 5. Returns the enrollment status.
+ * 
+ * @param {Object} course - The course object containing the Udemy course ID and coupon code.
+ * @returns {Promise<boolean>} True if the user is already enrolled, false otherwise.
+ * @throws {Error} If there is an error during the operation.
+ */
 export async function checkEnrollment(course) {
   const transaction = startTransaction({ op: 'checkEnrollment', name: 'Check course enrollment' });
 

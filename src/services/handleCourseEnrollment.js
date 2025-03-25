@@ -7,6 +7,14 @@ import { addBreadcrumb, startTransaction, captureException } from '@sentry/node'
 
 const mutex = new Mutex();
 
+/**
+ * Clicks a button on the page with an environment variable check.
+ * @param {Object} page - The Puppeteer page object.
+ * @param {string} pageTitle - The title of the page.
+ * @param {string} envVar - The environment variable for the button selector.
+ * @param {Object} [buttonToClick] - The button element to click (optional).
+ * @throws {Error} If the environment variable is not set.
+ */
 export async function clickButtonWithEnvCheck(page, pageTitle, envVar, buttonToClick) {
   const buttonSelector = process.env[envVar];
   if (!buttonSelector) {
@@ -16,6 +24,13 @@ export async function clickButtonWithEnvCheck(page, pageTitle, envVar, buttonToC
   await clickButton(page, pageTitle, buttonSelector, buttonToClick);
 }
 
+/**
+ * Logs the enrollment status and closes the page if it is open.
+ * @param {Object} page - The Puppeteer page object.
+ * @param {string} url - The URL to check for enrollment success.
+ * @param {string} pageTitle - The title of the page (course).
+ * @param {boolean} isPageClosed - Flag indicating if the page is already closed.
+ */
 export async function logEnrollmentStatusAndClosePageIfOpen(page, url, pageTitle, isPageClosed) {
   if (!page) {
     console.error("Error: page is not defined:", pageTitle);
@@ -28,6 +43,12 @@ export async function logEnrollmentStatusAndClosePageIfOpen(page, url, pageTitle
   }
 }
 
+/**
+ * Handles the course enrollment process.
+ * Brings the page to the front, clicks the necessary buttons, waits for the URL to change,
+ * and logs the enrollment status.
+ * @param {Object} courseResult - The result object containing the page and button to click.
+ */
 export async function handleCourseEnrollment(courseResult) {
   const { page, buttonToClick } = courseResult;
   let isPageClosed = false;
@@ -50,6 +71,11 @@ export async function handleCourseEnrollment(courseResult) {
   }
 }
 
+/**
+ * Enrolls in a course by navigating to the checkout page, clicking the necessary buttons,
+ * and handling any errors that occur during the process.
+ * @param {Object} course - The course object containing the Udemy course ID and coupon code.
+ */
 export default async function checkoutCourse(course) {
   const udemyCourseId = course.udemyCourseId;
   const couponCode = course.couponCode;
@@ -176,8 +202,6 @@ export default async function checkoutCourse(course) {
       await checkoutPage.close();
     }
   }
-
-
 
   addBreadcrumb({
     category: 'checkout',

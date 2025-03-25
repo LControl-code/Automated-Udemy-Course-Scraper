@@ -1,10 +1,14 @@
+/**
+ * Main application file.
+ * This file is responsible for the main flow of the application.
+ */
+
 // Import necessary functions
 import shouldScrape from '../services/shouldScrape.js';
 import scrapeSite from './scrapeSite.js';
 import { exec } from 'child_process';
 import { init, startTransaction, addBreadcrumb, setTag, captureException } from '@sentry/node';
 import { ProfilingIntegration } from "@sentry/profiling-node";
-
 
 // Initialize Sentry
 init({
@@ -19,10 +23,12 @@ init({
   profilesSampleRate: 0.3,
 });
 
-
-// This function checks if we should scrape the site, and if so, it does.
-// After it's done, it schedules itself to run again in 5 minutes.
 let failCount = 0;
+
+/**
+ * This function checks if we should scrape the site, and if so, it does.
+ * After it's done, it schedules itself to run again in 5 minutes.
+ */
 async function runAndReschedule() {
   const transaction = startTransaction({
     op: "scrape",

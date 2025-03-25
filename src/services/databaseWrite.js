@@ -3,6 +3,11 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 dotenv.config();
 
+/**
+ * Connects to the database using the MONGODB_URI from the environment variables.
+ * Adds a breadcrumb for tracking the connection status.
+ * @throws {Error} If there is an error connecting to the database.
+ */
 async function connectToDatabase() {
   try {
     addBreadcrumb({
@@ -25,6 +30,7 @@ async function connectToDatabase() {
   }
 }
 
+// Define the schema for the courses collection
 const coursesSchema = new mongoose.Schema({
   udemyCourseId: {
     type: Number,
@@ -103,9 +109,15 @@ const coursesSchema = new mongoose.Schema({
   timestamps: true,
 });
 
-// Creating a model for the movies collection using the schema
+// Creating a model for the courses collection using the schema
 const coursesModel = mongoose.model("courses", coursesSchema)
 
+/**
+ * Writes the provided courses to the database.
+ * Connects to the database, creates course documents, and handles duplicate course errors.
+ * @param {Array} courses - The courses to write to the database.
+ * @throws {Error} If there is an error during the operation.
+ */
 export default async function databaseWrite(courses) {
   if (!courses || courses.length === 0) {
     return;

@@ -1,4 +1,7 @@
-// Description: Main file for the application. This file is responsible for the main flow of the application.
+/**
+ * Main file for the application. This file is responsible for the main flow of the application.
+ */
+
 import { handleUncaughtErrors } from '../helperServices/globalErrorHandler.js';
 handleUncaughtErrors();
 
@@ -7,19 +10,23 @@ import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { addBreadcrumb, captureException, captureMessage, startTransaction } from '@sentry/node';
 
-
 // Importing services
 import { checkCourses, checkEnrollment } from '../services/extractInformation.js';
-import setCookies from '../services/setCookies.js'
-import checkoutCourse from '../services/handleCourseEnrollment.js'
-import fetchAndCompareCourses from '../services/fetchAndCompareCourses.js'
-import dataWrite from '../services/dataWrite.js'
-import databaseWrite from '../services/databaseWrite.js'
+import setCookies from '../services/setCookies.js';
+import checkoutCourse from '../services/handleCourseEnrollment.js';
+import fetchAndCompareCourses from '../services/fetchAndCompareCourses.js';
+import dataWrite from '../services/dataWrite.js';
+import databaseWrite from '../services/databaseWrite.js';
 
 puppeteer.use(StealthPlugin());
 
 export let browser;
 
+/**
+ * Get an instance of the browser.
+ * If the browser is not already launched, it launches a new instance.
+ * @returns {Promise<Browser>} The browser instance.
+ */
 async function getBrowserInstance() {
   try {
     if (!browser) {
@@ -51,6 +58,11 @@ async function getBrowserInstance() {
   }
 }
 
+/**
+ * Close the browser instance if it is open.
+ * Sets the browser variable to null after closing.
+ * @returns {Promise<void>}
+ */
 async function closeBrowserInstance() {
   try {
     if (browser) {
@@ -75,6 +87,12 @@ async function closeBrowserInstance() {
   }
 }
 
+/**
+ * Main function to scrape the site.
+ * This function fetches and compares courses, sets cookies, checks for free courses,
+ * checks enrollment status, and enrolls in courses if necessary.
+ * @returns {Promise<void>}
+ */
 export default async function scrapeSite() {
   const transaction = startTransaction({
     op: 'task',
@@ -82,7 +100,6 @@ export default async function scrapeSite() {
   });
 
   try {
-
     const startTime = new Date();
 
     let courses = await fetchAndCompareCourses();
@@ -163,7 +180,6 @@ export default async function scrapeSite() {
         coursesToEnroll: coursesToEnroll || "No courses found",
       },
     });
-
 
     if (!coursesToEnroll || coursesToEnroll?.length === 0) {
       console.log('No new courses found');

@@ -2,6 +2,10 @@ import fs from 'fs';
 import fetch from 'node-fetch';
 import { addBreadcrumb, captureException, startTransaction } from '@sentry/node';
 
+/**
+ * Reads the previous run site list from a file.
+ * @returns {Array} An array of previous links.
+ */
 function readPreviousLinks() {
   if (!fs.existsSync('data/previousRunSiteList.json')) {
     return [];
@@ -11,15 +15,29 @@ function readPreviousLinks() {
   return previousLinksData ? JSON.parse(previousLinksData) : [];
 }
 
+/**
+ * Finds new links by comparing current links with previous links.
+ * @param {Array} currentLinks - The current links to compare.
+ * @param {Array} previousLinks - The previous links to compare against.
+ * @returns {Array} An array of new links.
+ */
 function findNewLinks(currentLinks, previousLinks) {
   return currentLinks.filter(link => !previousLinks.includes(link));
 }
 
+/**
+ * Writes the current links to a file.
+ * @param {Array} currentLinks - The current links to write.
+ */
 function writeCurrentLinks(currentLinks) {
   fs.writeFileSync('data/previousRunSiteList.json', JSON.stringify(currentLinks, null, 2));
 }
 
-
+/**
+ * Transforms the fetched courses into a desired format.
+ * @param {Array} courses - The courses to transform.
+ * @returns {Array} An array of transformed courses.
+ */
 function transformCourses(courses) {
   return courses.map(course => ({
     udemyCourseId: course.udemyCourseId,

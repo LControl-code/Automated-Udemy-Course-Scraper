@@ -1,6 +1,12 @@
 import chalk from 'chalk'
 import fs from 'fs'
 
+/**
+ * Logs the enrollment status of a course.
+ * If the enrollment is successful, logs the course title to a file.
+ * @param {string} url - The URL to check for enrollment success.
+ * @param {string} pageTitle - The title of the page (course).
+ */
 export async function logEnrollmentStatus(url, pageTitle) {
   if (!url) {
     console.log(chalk.white.bgRed("- Enrollment failed:", pageTitle));
@@ -15,6 +21,14 @@ export async function logEnrollmentStatus(url, pageTitle) {
   }
 }
 
+/**
+ * Writes a log entry to a file.
+ * Supports both append and rewrite modes.
+ * @param {string} logFile - The path to the log file.
+ * @param {string} log - The log entry to write.
+ * @param {string} [mode='a'] - The mode to use ('a' for append, 'r' for rewrite).
+ * @throws {Error} If an invalid mode is provided.
+ */
 export async function writeLog(logFile, log, mode = 'a') {
   if (mode === 'a') {
     // Append mode

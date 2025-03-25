@@ -1,5 +1,12 @@
 import { logButtonText, logCheckingLink, createNewPageAndGoToLink, getPageTitle, isButtonAvailable, getButtonToClick, getButtonText } from '../helperServices/pageHelpers.js';
 
+/**
+ * Enrolls into a course.
+ * Logs the link being checked, creates a new page, retrieves the page title and button to click,
+ * checks if the button is available, logs the button text, and clicks the "Enroll now" button if available.
+ * @param {Object} course - The course object containing the Udemy link.
+ * @returns {Promise<Object|null>} The page and button to click if enrollment is possible, otherwise null.
+ */
 export default async function enrollIntoCourse(course) {
   const link = course.udemyLink;
   logCheckingLink(link);
@@ -16,7 +23,6 @@ export default async function enrollIntoCourse(course) {
   }
 
   course.name = pageTitle;
-
 
   if (!isButtonAvailable(buttonToClick, pageTitle)) {
     await page.close();

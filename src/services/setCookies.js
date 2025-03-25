@@ -1,9 +1,15 @@
-// setCookiesUdemy.js
 import fs from 'fs';
 import dotenv from 'dotenv'
 
 dotenv.config();
 
+/**
+ * Logs into Udemy and saves the cookies to a file.
+ * Navigates to the Udemy login page, enters the email and password, and submits the form.
+ * Saves the cookies to 'data/cookies.json'.
+ * @param {Object} page - The Puppeteer page object.
+ * @returns {Promise<void>}
+ */
 async function login(page) {
   await page.goto('https://www.udemy.com/join/login-popup/');
 
@@ -25,6 +31,13 @@ async function login(page) {
   console.log("New cookies written from Log in")
 }
 
+/**
+ * Checks if the user is logged in to Udemy.
+ * Navigates to the Udemy login page and checks the current URL.
+ * If the user is not logged in, it calls the login function.
+ * @param {Object} page - The Puppeteer page object.
+ * @returns {Promise<void>}
+ */
 async function checkLogin(page) {
   await page.goto('https://www.udemy.com/join/login-popup/');
 
@@ -38,7 +51,14 @@ async function checkLogin(page) {
   }
 }
 
-
+/**
+ * Sets the cookies for the Puppeteer page.
+ * Reads the cookies from 'data/cookies.json' and sets them on the page.
+ * If no cookies are found, it calls the login function to generate new cookies.
+ * Also writes the cookies as a string to 'data/cookiesString.txt'.
+ * @param {Object} page - The Puppeteer page object.
+ * @returns {Promise<void>}
+ */
 export default async function setCookies(page) {
   const cookiesFilePath = 'data/cookies.json';
   const cookiesStringFilePath = 'data/cookiesString.txt';
@@ -57,4 +77,3 @@ export default async function setCookies(page) {
 
   await checkLogin(page);
 }
-
