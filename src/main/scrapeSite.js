@@ -2,59 +2,67 @@
  * Main file for the application. This file is responsible for the main flow of the application.
  */
 
-import { handleUncaughtErrors } from '../helperServices/globalErrorHandler.js';
-handleUncaughtErrors();
+import { handleUncaughtErrors } from '../helperServices/globalErrorHandler.js'
 
 // Importing external libraries
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { addBreadcrumb, captureException, captureMessage, startTransaction } from '@sentry/node';
+import puppeteer from 'puppeteer-extra'
+import StealthPlugin from 'puppeteer-extra-plugin-stealth'
+import {
+  addBreadcrumb,
+  captureException,
+  captureMessage,
+  startTransaction
+} from '@sentry/node'
 
 // Importing services
-import { checkCourses, checkEnrollment } from '../services/extractInformation.js';
-import setCookies from '../services/setCookies.js';
-import checkoutCourse from '../services/handleCourseEnrollment.js';
-import fetchAndCompareCourses from '../services/fetchAndCompareCourses.js';
-import dataWrite from '../services/dataWrite.js';
-import databaseWrite from '../services/databaseWrite.js';
+import {
+  checkCourses,
+  checkEnrollment
+} from '../services/extractInformation.js'
+import setCookies from '../services/setCookies.js'
+import checkoutCourse from '../services/handleCourseEnrollment.js'
+import fetchAndCompareCourses from '../services/fetchAndCompareCourses.js'
+import dataWrite from '../services/dataWrite.js'
+import databaseWrite from '../services/databaseWrite.js'
+handleUncaughtErrors()
 
-puppeteer.use(StealthPlugin());
+puppeteer.use(StealthPlugin())
 
-export let browser;
+export let browser
 
 /**
  * Get an instance of the browser.
  * If the browser is not already launched, it launches a new instance.
  * @returns {Promise<Browser>} The browser instance.
  */
-async function getBrowserInstance() {
+async function getBrowserInstance () {
   try {
     if (!browser) {
       addBreadcrumb({
         category: 'browser',
         message: 'Launching new browser instance',
-        level: 'info',
-      });
+        level: 'info'
+      })
 
       browser = await puppeteer.launch({
         headless: 'new',
         defaultViewport: {
           width: 1920,
-          height: 1080,
+          height: 1080
         },
-        timeout: 200000,
-      });
+        timeout: 200000
+      })
 
       addBreadcrumb({
         category: 'browser',
         message: 'New browser instance launched',
-        level: 'info',
-      });
+        level: 'info'
+      })
     }
-    return browser;
+    return browser
   } catch (error) {
-    captureException(error);
-    throw error;
+    captureException(error)
+    throw error
   }
 }
 
@@ -63,27 +71,27 @@ async function getBrowserInstance() {
  * Sets the browser variable to null after closing.
  * @returns {Promise<void>}
  */
-async function closeBrowserInstance() {
+async function closeBrowserInstance () {
   try {
     if (browser) {
       addBreadcrumb({
         category: 'browser',
         message: 'Closing browser instance',
-        level: 'info',
-      });
+        level: 'info'
+      })
 
-      await browser.close();
-      browser = null;
+      await browser.close()
+      browser = null
 
       addBreadcrumb({
         category: 'browser',
         message: 'Browser instance closed',
-        level: 'info',
-      });
+        level: 'info'
+      })
     }
   } catch (error) {
-    captureException(error);
-    throw error;
+    captureException(error)
+    throw error
   }
 }
 
@@ -93,127 +101,146 @@ async function closeBrowserInstance() {
  * checks enrollment status, and enrolls in courses if necessary.
  * @returns {Promise<void>}
  */
-export default async function scrapeSite() {
+export default async function scrapeSite () {
   const transaction = startTransaction({
     op: 'task',
-    name: 'Scrape site',
-  });
+    name: 'Scrape site'
+  })
 
   try {
-    const startTime = new Date();
+    const startTime = new Date()
 
-    let courses = await fetchAndCompareCourses();
+    const courses = await fetchAndCompareCourses()
 
     if (!courses || courses?.length === 0) {
-      console.log('No new courses found');
-      return;
+      console.log('No new courses found')
+      return
     }
 
-    const browser = await getBrowserInstance();
+    const browser = await getBrowserInstance()
 
     addBreadcrumb({
       category: 'browser',
       message: 'Browser instance obtained',
-      level: 'info',
-    });
+      level: 'info'
+    })
 
-    const tempCookiePage = await browser.newPage();
+    const tempCookiePage = await browser.newPage()
     await tempCookiePage.setViewport({
       width: 1920,
-      height: 1080,
-    });
-    await setCookies(tempCookiePage);
+      height: 1080
+    })
+    await setCookies(tempCookiePage)
     if (tempCookiePage) {
-      await tempCookiePage.close();
+      await tempCookiePage.close()
     }
 
     addBreadcrumb({
       category: 'browser',
       message: 'Cookies set and temporary page closed',
-      level: 'info',
-    });
+      level: 'info'
+    })
 
     // Pass the Udemy IDs and coupon codes to the checkCourses function
-    const freeCourses = await checkCourses(courses);
+    const freeCourses = await checkCourses(courses)
 
     addBreadcrumb({
       category: 'shouldScrape',
       message: 'Free courses checked',
       level: 'info',
       data: {
-        freeCourses: freeCourses || "No courses found",
-        courses: JSON.stringify(courses, null, 2) || "No courses found",
-      },
-    });
+        freeCourses: freeCourses || 'No courses found',
+        courses: JSON.stringify(courses, null, 2) || 'No courses found'
+      }
+    })
 
     if (!freeCourses || freeCourses?.length === 0) {
-      console.log('No new courses found');
-      await closeBrowserInstance();
-      await dataWrite(courses);
-      return;
+      console.log('No new courses found')
+      await closeBrowserInstance()
+      await dataWrite(courses)
+      return
     }
 
     // Check enrollment for all courses concurrently
-    const enrollmentStatuses = await Promise.all(freeCourses.map(course => checkEnrollment(course)));
+    const enrollmentStatuses = await Promise.all(
+      freeCourses.map((course) => checkEnrollment(course))
+    )
 
     // Filter out already enrolled courses
-    const notEnrolledCourses = freeCourses.filter((course, index) => !enrollmentStatuses[index]);
+    const notEnrolledCourses = freeCourses.filter(
+      (course, index) => !enrollmentStatuses[index]
+    )
 
-    courses.forEach(course => {
-      if (!notEnrolledCourses.some(notEnrolledCourse => notEnrolledCourse.udemyCourseId === course.udemyCourseId)) {
-        course.debug.isEnrolled = true;
+    courses.forEach((course) => {
+      if (
+        !notEnrolledCourses.some(
+          (notEnrolledCourse) =>
+            notEnrolledCourse.udemyCourseId === course.udemyCourseId
+        )
+      ) {
+        course.debug.isEnrolled = true
       } else {
-        course.debug.isEnrolled = false;
+        course.debug.isEnrolled = false
       }
-    });
+    })
 
     // Filter the courses array to include only the courses that are also in notEnrolledCourses
-    const coursesToEnroll = courses.filter(course =>
-      notEnrolledCourses.some(notEnrolledCourse => notEnrolledCourse.udemyCourseId === course.udemyCourseId)
-    );
+    const coursesToEnroll = courses.filter((course) =>
+      notEnrolledCourses.some(
+        (notEnrolledCourse) =>
+          notEnrolledCourse.udemyCourseId === course.udemyCourseId
+      )
+    )
 
     addBreadcrumb({
       category: 'shouldScrape',
       message: 'Not enrolled and free courses filtered',
       level: 'info',
       data: {
-        coursesToEnroll: coursesToEnroll || "No courses found",
-      },
-    });
+        coursesToEnroll: coursesToEnroll || 'No courses found'
+      }
+    })
 
     if (!coursesToEnroll || coursesToEnroll?.length === 0) {
-      console.log('No new courses found');
-      await dataWrite(courses);
-      await closeBrowserInstance();
-      return;
+      console.log('No new courses found')
+      await dataWrite(courses)
+      await closeBrowserInstance()
+      return
     }
 
-    await Promise.all(coursesToEnroll.map(checkoutCourse));
+    await Promise.all(coursesToEnroll.map(checkoutCourse))
     courses.forEach((course, index) => {
-      const enrolledCourse = coursesToEnroll.find(enrolledCourse => enrolledCourse.udemyCourseId === course.udemyCourseId);
+      const enrolledCourse = coursesToEnroll.find(
+        (enrolledCourse) =>
+          enrolledCourse.udemyCourseId === course.udemyCourseId
+      )
       if (enrolledCourse) {
-        courses[index].debug = enrolledCourse.debug;
+        courses[index].debug = enrolledCourse.debug
       }
-    });
+    })
 
-    await dataWrite(courses);
+    await dataWrite(courses)
 
-    const enrolledCoursesForDatabase = courses.filter(course => course.debug.isEnrolled);
-    databaseWrite(enrolledCoursesForDatabase);
+    const enrolledCoursesForDatabase = courses.filter(
+      (course) => course.debug.isEnrolled
+    )
+    databaseWrite(enrolledCoursesForDatabase)
 
-    const endTime = new Date();
-    const executionTime = endTime - startTime;
+    const endTime = new Date()
+    const executionTime = endTime - startTime
 
-    console.log(`Enrollment completed in ${(executionTime / 1000).toFixed(2)}s`);
+    console.log(
+      `Enrollment completed in ${(executionTime / 1000).toFixed(2)}s`
+    )
 
-    await closeBrowserInstance();
+    await closeBrowserInstance()
 
-    captureMessage('ScrapeSite ran successfully');
+    captureMessage('ScrapeSite ran successfully')
   } catch (error) {
-    console.error('An error occurred while scraping the site:', error);
-    captureException(error);
-    throw error;
+    console.error('An error occurred while scraping the site:', error)
+    captureException(error)
+    throw error
   } finally {
-    transaction.finish();
+    transaction.finish()
   }
 }

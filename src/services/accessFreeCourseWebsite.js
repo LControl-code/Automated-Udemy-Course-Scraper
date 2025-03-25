@@ -1,4 +1,4 @@
-import { browser } from '../main/scrapeSite.js';
+import { browser } from '../main/scrapeSite.js'
 
 /**
  * Accesses the free course website.
@@ -6,11 +6,14 @@ import { browser } from '../main/scrapeSite.js';
  * Navigates to the 'https://findmycourse.in/' website.
  * @returns {Promise<Object>} The Puppeteer page object.
  */
-export default async function accessFreeCourseWebsite() {
-  let page = (await browser.pages())[0];
+export default async function accessFreeCourseWebsite () {
+  let page = (await browser.pages())[0]
   if (!page) {
-    page = await browser.newPage();
+    page = await browser.newPage()
   }
-  await page.goto('https://findmycourse.in/', { waitUntil: 'networkidle2', timeout: 60000 })
+  await page.goto('https://findmycourse.in/', {
+    waitUntil: 'networkidle2',
+    timeout: 60000
+  })
   return page
 }

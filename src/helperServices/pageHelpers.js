@@ -7,18 +7,18 @@ import { browser } from '../main/scrapeSite.js'
  * @param {string} buttonText - The text of the button.
  * @param {Object} course - The course object.
  */
-export function logButtonText(buttonText, course) {
-  if (buttonText === "Go to course") {
-    console.log(chalk.yellow("= Already enrolled:", course.name));
-    course.status = "Enrolled"
-  } else if (buttonText === "Enroll now") {
-    console.log(chalk.green("~ Ready to enroll:", course.name));
-    course.status = "Free"
-  } else if (buttonText === "Buy now") {
-    console.log(chalk.red("- Too late:", course.name));
-    course.status = "Paid"
+export function logButtonText (buttonText, course) {
+  if (buttonText === 'Go to course') {
+    console.log(chalk.yellow('= Already enrolled:', course.name))
+    course.status = 'Enrolled'
+  } else if (buttonText === 'Enroll now') {
+    console.log(chalk.green('~ Ready to enroll:', course.name))
+    course.status = 'Free'
+  } else if (buttonText === 'Buy now') {
+    console.log(chalk.red('- Too late:', course.name))
+    course.status = 'Paid'
   } else {
-    console.log(chalk.bgRed("* Failed:", pageTitle));
+    console.log(chalk.bgRed('* Failed:', pageTitle))
   }
 }
 
@@ -26,8 +26,8 @@ export function logButtonText(buttonText, course) {
  * Logs the link being checked.
  * @param {string} link - The link being checked.
  */
-export function logCheckingLink(link) {
-  console.log(chalk.blue("Checking:", link || "No Udemy link found"));
+export function logCheckingLink (link) {
+  console.log(chalk.blue('Checking:', link || 'No Udemy link found'))
 }
 
 /**
@@ -35,10 +35,10 @@ export function logCheckingLink(link) {
  * @param {string} link - The link to navigate to.
  * @returns {Promise<Object>} The Puppeteer page object.
  */
-export async function createNewPageAndGoToLink(link) {
-  const page = await browser.newPage();
-  await page.goto(link);
-  return page;
+export async function createNewPageAndGoToLink (link) {
+  const page = await browser.newPage()
+  await page.goto(link)
+  return page
 }
 
 /**
@@ -46,10 +46,10 @@ export async function createNewPageAndGoToLink(link) {
  * @param {Object} page - The Puppeteer page object.
  * @returns {Promise<string>} The title of the page.
  */
-export async function getPageTitle(page) {
-  const title = await page.title();
-  const pageTitle = title.split('| Udemy')[0].trim();
-  return pageTitle;
+export async function getPageTitle (page) {
+  const title = await page.title()
+  const pageTitle = title.split('| Udemy')[0].trim()
+  return pageTitle
 }
 
 /**
@@ -58,12 +58,12 @@ export async function getPageTitle(page) {
  * @param {string} pageTitle - The title of the page.
  * @returns {boolean} True if the button is available, false otherwise.
  */
-export function isButtonAvailable(buttonToClick, pageTitle) {
+export function isButtonAvailable (buttonToClick, pageTitle) {
   if (!buttonToClick) {
-    console.log(chalk.bgRed("* Failed:", pageTitle));
-    return false;
+    console.log(chalk.bgRed('* Failed:', pageTitle))
+    return false
   }
-  return true;
+  return true
 }
 
 /**
@@ -72,8 +72,8 @@ export function isButtonAvailable(buttonToClick, pageTitle) {
  * @param {Object} buttonToClick - The button element to get the text from.
  * @returns {Promise<string>} The text content of the button.
  */
-export async function getButtonText(page, buttonToClick) {
-  return await page.evaluate(element => element.textContent, buttonToClick);
+export async function getButtonText (page, buttonToClick) {
+  return await page.evaluate((element) => element.textContent, buttonToClick)
 }
 
 /**
@@ -82,14 +82,15 @@ export async function getButtonText(page, buttonToClick) {
  * @param {string} pageTitle - The title of the page.
  * @returns {Promise<Object|null>} The button element, or null if not found.
  */
-export async function getButtonToClick(page, pageTitle) {
-  const buttonSelector = 'div[data-purpose="sidebar-container"]  button[data-purpose="buy-this-course-button"]';
+export async function getButtonToClick (page, pageTitle) {
+  const buttonSelector =
+    'div[data-purpose="sidebar-container"]  button[data-purpose="buy-this-course-button"]'
   try {
-    await page.waitForSelector(buttonSelector);
-    return await page.$(buttonSelector);
+    await page.waitForSelector(buttonSelector)
+    return await page.$(buttonSelector)
   } catch (error) {
-    console.log(chalk.bgRed("* Timeout exceeded:", pageTitle));
-    return null;
+    console.log(chalk.bgRed('* Timeout exceeded:', pageTitle))
+    return null
   }
 }
 
@@ -98,6 +99,6 @@ export async function getButtonToClick(page, pageTitle) {
  * @param {Object} page - The Puppeteer page object.
  * @returns {Promise<void>}
  */
-export async function bringPageToFront(page) {
-  await page.bringToFront();
+export async function bringPageToFront (page) {
+  await page.bringToFront()
 }
